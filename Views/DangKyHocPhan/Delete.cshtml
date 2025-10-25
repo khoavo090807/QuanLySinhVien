@@ -1,0 +1,80 @@
+﻿@model QuanLySinhVien.Models.DangKyHocPhan
+
+@{
+    ViewBag.Title = "Hủy đăng ký học phần";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-ban"></i> Xác nhận hủy đăng ký học phần
+        </h2>
+    </div>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Cảnh báo hủy đăng ký
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+            Bạn có chắc chắn muốn hủy đăng ký học phần này? Hành động này không thể hoàn tác!
+        </div>
+
+        <h4 class="mb-4">Thông tin đăng ký sẽ bị hủy:</h4>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5"><i class="fas fa-user text-primary"></i> Sinh viên:</dt>
+                            <dd class="col-sm-7">
+                                <strong>@Model.HoTenSV</strong><br>
+                                <small class="text-muted">Mã SV: @Model.MaSV</small>
+                            </dd>
+
+                            <dt class="col-sm-5"><i class="fas fa-book text-success"></i> Môn học:</dt>
+                            <dd class="col-sm-7">
+                                <strong>@Model.TenMH</strong><br>
+                                <small class="text-muted">Mã LHP: @Model.MaLHP</small>
+                            </dd>
+
+                            <dt class="col-sm-5"><i class="fas fa-calendar text-info"></i> Học kỳ:</dt>
+                            <dd class="col-sm-7">
+                                <span class="badge bg-info">@Model.TenHK</span>
+                            </dd>
+
+                            <dt class="col-sm-5"><i class="fas fa-clock text-warning"></i> Ngày đăng ký:</dt>
+                            <dd class="col-sm-7">@Model.NgayDangKy.ToString("dd/MM/yyyy HH:mm")</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>Cảnh báo:</strong> Sau khi hủy đăng ký, sinh viên sẽ phải đăng ký lại nếu muốn học môn này!
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("Delete", "DangKyHocPhan", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaSV)
+            @Html.HiddenFor(model => model.MaLHP)
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn hủy đăng ký này?');">
+                    <i class="fas fa-ban"></i> Xác nhận hủy
+                </button>
+            </div>
+        }
+    </div>
+</div>

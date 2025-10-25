@@ -1,0 +1,66 @@
+﻿@* ========== EDIT.CSHTML ========== *@
+@model QuanLySinhVien.Models.MonHoc
+
+@{
+    ViewBag.Title = "Chỉnh sửa môn học";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-edit"></i> Chỉnh sửa môn học
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit"></i> Cập nhật thông tin môn học
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "MonHoc", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaMH)
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaMH, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.MaMH, new { @class = "form-control", @readonly = "readonly", style = "background-color: #e9ecef;" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.TenMH, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.TenMH, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(model => model.TenMH, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.SoTinChi, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.SoTinChi, new { @class = "form-control", type = "number", min = "1", max = "10" })
+                        @Html.ValidationMessageFor(model => model.SoTinChi, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Cập nhật
+                </button>
+            </div>
+        }
+    </div>
+</div>

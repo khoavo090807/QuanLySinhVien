@@ -1,0 +1,150 @@
+﻿@model dynamic
+@using System.Linq
+@{
+    ViewBag.Title = "Thống Kê Học Kỳ";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="fas fa-chart-bar"></i> Thống Kê Học Kỳ
+    </h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Form chon hoc ky -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Chọn Học Kỳ</h5>
+        </div>
+        <div class="card-body">
+            @using (Html.BeginForm("ThongKeHocKy", "Home", FormMethod.Get))
+            {
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label for="maHK" class="form-label">Học Kỳ:</label>
+                        <select name="maHK" id="maHK" class="form-control">
+                            <option value="">-- Chọn học kỳ --</option>
+                            @if (ViewBag.DanhSachHocKy != null)
+                            {
+                                foreach (var hk in ViewBag.DanhSachHocKy)
+                                {
+                                    <option value="@hk.MaHK" @(ViewBag.SelectedHK == hk.MaHK ? "selected" : "")>
+                                        @hk.TenHK (@hk.NgayBatDau.ToString("dd/MM/yyyy") - @hk.NgayKetThuc.ToString("dd/MM/yyyy")) - @hk.SoLopHocPhan lớp
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Xem Thống Kê
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Thong ke chi tiet -->
+    @if (!string.IsNullOrEmpty(ViewBag.SelectedHK) && ViewBag.ChiTietThongKe != null)
+    {
+        var chiTiet = ViewBag.ChiTietThongKe as List<QuanLySinhVien.Models.LopHocPhanThongKe>;
+        var danhSachHK = ViewBag.DanhSachHocKy as List<QuanLySinhVien.Models.HocKyThongKe>;
+        var selectedHKInfo = danhSachHK?.FirstOrDefault(h => h.MaHK == ViewBag.SelectedHK);
+        var selectedHKName = selectedHKInfo?.TenHK ?? ViewBag.SelectedHK;
+
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i>
+                    Thống Kê Chi Tiết: @selectedHKName
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Bảng chi tiết -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>STT</th>
+                                <th style="text-align: center;">Mã LHP</th>
+                                <th>Tên Môn Học</th>
+                                <th style="text-align: center;">Sĩ Số</th>
+                                <th style="text-align: center;">Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (chiTiet != null && chiTiet.Any())
+                            {
+                                int stt = 1;
+                                foreach (var item in chiTiet)
+                                {
+                                    <tr>
+                                        <td>@(stt++)</td>
+                                        <td style="text-align: center;"><strong>@item.MaLHP</strong></td>
+                                        <td>@item.TenMH</td>
+                                        <td style="text-align: center;">
+                                            <span class="badge @(item.SiSoThucTe == 0 ? "bg-danger" : item.SiSoThucTe >= 30 ? "bg-success" : "bg-warning")">
+                                                @item.SiSoThucTe sinh viên
+                                            </span>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            @if (item.SiSoThucTe == 0)
+                                            {
+                                                <span class="badge bg-danger">Chưa có SV</span>
+                                            }
+                                            else if (item.SiSoThucTe >= 50)
+                                            {
+                                                <span class="badge bg-success">Nhiều SV</span>
+                                            }
+                                            else if (item.SiSoThucTe >= 20)
+                                            {
+                                                <span class="badge bg-warning">Vừa phải</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Ít SV</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        <i class="fas fa-info-circle"></i> Không có dữ liệu lớp học phần cho học kỳ này.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(ViewBag.SelectedHK))
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Vui lòng chọn một học kỳ để xem thống kê chi tiết.
+        </div>
+    }
+
+    <!-- Nếu chưa chọn học kỳ nào -->
+    @if (string.IsNullOrEmpty(ViewBag.SelectedHK))
+    {
+        <div class="alert alert-info text-center">
+            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+            <h4>Chào mừng đến với trang Thống Kê Học Kỳ</h4>
+            <p>Vui lòng chọn một học kỳ từ danh sách ở trên để xem thống kê chi tiết về các lớp học phần.</p>
+        </div>
+    }
+</div>
+

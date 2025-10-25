@@ -1,0 +1,81 @@
+﻿@{
+    ViewBag.Title = "Đăng ký học phần";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-edit"></i> Đăng ký học phần cho sinh viên
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-clipboard-check"></i> Chọn thông tin đăng ký
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("Create", "DangKyHocPhan", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Hướng dẫn:</strong> Chọn sinh viên và lớp học phần muốn đăng ký.
+                Hệ thống sẽ tự động kiểm tra điều kiện tiên quyết.
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Sinh viên <span class="text-danger">*</span></label>
+                        @Html.DropDownList("MaSV",
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
+                            "-- Chọn sinh viên --",
+                            new { @class = "form-select", required = "required" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Lớp học phần <span class="text-danger">*</span></label>
+                        @Html.DropDownList("MaLHP",
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachLopHocPhan,
+                            "-- Chọn lớp học phần --",
+                            new { @class = "form-select", required = "required" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Lưu ý:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Sinh viên phải đạt các môn tiên quyết (nếu có)</li>
+                    <li>Lớp học phần chưa đầy sĩ số</li>
+                    <li>Trong thời gian đăng ký của học kỳ</li>
+                </ul>
+            </div>
+
+            <hr />
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Xác nhận đăng ký
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        // Tự động ẩn thông báo sau 5 giây
+        setTimeout(function() {
+            $('.alert-success, .alert-danger').fadeOut('slow');
+        }, 5000);
+    </script>
+}

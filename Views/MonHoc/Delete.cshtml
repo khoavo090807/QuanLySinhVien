@@ -1,0 +1,62 @@
+﻿@* ========== DELETE.CSHTML ========== *@
+@model QuanLySinhVien.Models.MonHoc
+
+@{
+    ViewBag.Title = "Xóa môn học";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-trash-alt"></i> Xác nhận xóa môn học
+        </h2>
+    </div>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Cảnh báo xóa dữ liệu
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+            Bạn có chắc chắn muốn xóa môn học này? Hành động này không thể hoàn tác!
+        </div>
+
+        <h4 class="mb-4">Thông tin môn học sẽ bị xóa:</h4>
+
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <dl class="row">
+                    <dt class="col-sm-5">Mã môn học:</dt>
+                    <dd class="col-sm-7"><strong class="text-primary">@Model.MaMH</strong></dd>
+
+                    <dt class="col-sm-5">Tên môn học:</dt>
+                    <dd class="col-sm-7">@Model.TenMH</dd>
+
+                    <dt class="col-sm-5">Số tín chỉ:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-success fs-6">@Model.SoTinChi TC</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("Delete", "MonHoc", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaMH)
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Hủy bỏ
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn xóa môn học này?');">
+                    <i class="fas fa-trash"></i> Xác nhận xóa
+                </button>
+            </div>
+        }
+    </div>
+</div>

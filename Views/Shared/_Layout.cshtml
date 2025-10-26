@@ -116,13 +116,39 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> @User.Identity.Name
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("ChangePassword", "Account")">
+                                        <i class="fas fa-key"></i> Đổi mật khẩu
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="@Url.Action("Logout", "Account")">
+                                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="@Url.Action("Login", "Account")">
+                                <i class="fas fa-sign-in-alt"></i> Đăng nhập
+                            </a>
+                        </li>
+                    }
+                    
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-user"></i> Admin
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="@Url.Action("Login", "Account")">
                             <i class="fas fa-sign-out-alt"></i> Đăng xuất
                         </a>
                     </li>
@@ -151,13 +177,18 @@
                     <a class="nav-link" href="@Url.Action("Index", "DangKyHocPhan")">
                         <i class="fas fa-clipboard-list"></i> Đăng ký học phần
                     </a>
+                    <a class="nav-link" href="@Url.Action("Index", "GiangVien")">
+                        <i class="fas fa-chalkboard-user"></i> Giáo viên
+                    </a>
                     <hr style="border-color: rgba(255,255,255,0.2);">
                     <a class="nav-link" href="@Url.Action("ThongKeHocKy", "Home")">
                         <i class="fas fa-chart-bar"></i> Thống Kê
                     </a>
+
                     <a class="nav-link" href="#">
                         <i class="fas fa-cog"></i> Cài đặt
                     </a>
+
                 </nav>
             </div>
 

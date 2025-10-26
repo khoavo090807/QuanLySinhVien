@@ -1,0 +1,69 @@
+﻿@model QuanLySinhVien.Models.GiangVien
+
+@{
+    ViewBag.Title = "Xóa giáo viên";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-trash-alt"></i> Xác nhận xóa giáo viên
+        </h2>
+    </div>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Cảnh báo xóa dữ liệu
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+            Không thể xóa giáo viên nếu vẫn còn dạy lớp học phần!
+        </div>
+
+        <h4 class="mb-4">Thông tin giáo viên sẽ bị xóa:</h4>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <dl class="row">
+                    <dt class="col-sm-4">Mã giáo viên:</dt>
+                    <dd class="col-sm-8"><strong class="text-primary">@Model.MaGV</strong></dd>
+
+                    <dt class="col-sm-4">Họ tên:</dt>
+                    <dd class="col-sm-8">@Model.HoTenGV</dd>
+
+                    <dt class="col-sm-4">Email:</dt>
+                    <dd class="col-sm-8">@Model.Email</dd>
+
+                    <dt class="col-sm-4">Khoa:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-success">@Model.TenKhoa</span>
+                    </dd>
+
+                    <dt class="col-sm-4">Chức vụ:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-info">@Model.TenChucVu</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("Delete", "GiangVien", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaGV)
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Hủy bỏ
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn xóa giáo viên này?');">
+                    <i class="fas fa-trash"></i> Xác nhận xóa
+                </button>
+            </div>
+        }
+    </div>
+</div>

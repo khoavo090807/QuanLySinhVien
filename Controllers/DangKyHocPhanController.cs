@@ -1,9 +1,9 @@
-﻿
-using QuanLySinhVien.Models;
+﻿using QuanLySinhVien.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Web.Mvc;
 
 namespace QuanLySinhVien.Controllers
@@ -11,6 +11,35 @@ namespace QuanLySinhVien.Controllers
     public class DangKyHocPhanController : Controller
     {
         private DatabaseHelper db = new DatabaseHelper();
+
+        // ✅ Helper parse float từ DB — giữ đúng phần thập phân
+        private float? ParseDbFloat(object dbValue)
+        {
+            if (dbValue == null || dbValue == DBNull.Value) return null;
+            string s = dbValue.ToString().Trim();
+            if (string.IsNullOrEmpty(s)) return null;
+
+            // thử parse theo invariant (. hoặc ,)
+            if (float.TryParse(s.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var vInv))
+                return vInv;
+            // thử parse theo vi-VN
+            if (float.TryParse(s, NumberStyles.Float, new CultureInfo("vi-VN"), out var vVi))
+                return vVi;
+
+            try { return Convert.ToSingle(dbValue); } catch { return null; }
+        }
+
+        // ✅ Helper parse từ input form
+        private float? ParseInputFloat(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return null;
+            s = s.Trim();
+            if (float.TryParse(s.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var valInv))
+                return valInv;
+            if (float.TryParse(s, NumberStyles.Float, new CultureInfo("vi-VN"), out var valVi))
+                return valVi;
+            return null;
+        }
 
         // GET: DangKyHocPhan
         public ActionResult Index(string maSV)
@@ -29,17 +58,14 @@ namespace QuanLySinhVien.Controllers
                             WHERE 1=1";
 
             List<SqlParameter> parameters = new List<SqlParameter>();
-
             if (!string.IsNullOrEmpty(maSV))
             {
                 query += " AND dk.MaSV = @MaSV";
                 parameters.Add(new SqlParameter("@MaSV", maSV));
             }
-
             query += " ORDER BY dk.NgayDangKy DESC";
 
             DataTable dt = db.ExecuteQuery(query, parameters.ToArray());
-
             foreach (DataRow row in dt.Rows)
             {
                 DangKyHocPhan dk = new DangKyHocPhan
@@ -47,10 +73,10 @@ namespace QuanLySinhVien.Controllers
                     MaSV = row["MaSV"].ToString(),
                     MaLHP = row["MaLHP"].ToString(),
                     NgayDangKy = Convert.ToDateTime(row["NgayDangKy"]),
-                    DiemChuyenCan = row["DiemChuyenCan"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemChuyenCan"]) : null,
-                    DiemGiuaKy = row["DiemGiuaKy"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemGiuaKy"]) : null,
-                    DiemCuoiKy = row["DiemCuoiKy"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemCuoiKy"]) : null,
-                    DiemTongKet = row["DiemTongKet"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemTongKet"]) : null,
+                    DiemChuyenCan = ParseDbFloat(row["DiemChuyenCan"]),
+                    DiemGiuaKy = ParseDbFloat(row["DiemGiuaKy"]),
+                    DiemCuoiKy = ParseDbFloat(row["DiemCuoiKy"]),
+                    DiemTongKet = ParseDbFloat(row["DiemTongKet"]),
                     HoTenSV = row["HoTenSV"].ToString(),
                     TenMH = row["TenMH"].ToString(),
                     TenHK = row["TenHK"].ToString()
@@ -59,6 +85,7 @@ namespace QuanLySinhVien.Controllers
             }
 
             ViewBag.MaSV = maSV;
+            ViewBag.TotalCount = danhSach.Count;
             return View(danhSach);
         }
 
@@ -77,8 +104,6 @@ namespace QuanLySinhVien.Controllers
         {
             try
             {
-                // Pre-execution validation - kiểm tra trước khi gọi stored procedure
-                // 1. Kiểm tra LHP tồn tại
                 string checkLHPQuery = "SELECT COUNT(*) FROM LopHocPhan WHERE MaLHP = @MaLHP";
                 SqlParameter[] checkLHPParams = new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) };
                 int lhpCount = Convert.ToInt32(db.ExecuteScalar(checkLHPQuery, checkLHPParams));
@@ -91,7 +116,6 @@ namespace QuanLySinhVien.Controllers
                     return View();
                 }
 
-                // 2. Kiểm tra trùng đăng ký
                 string checkDupQuery = "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
                 SqlParameter[] checkDupParams = new SqlParameter[]
                 {
@@ -108,13 +132,12 @@ namespace QuanLySinhVien.Controllers
                     return View();
                 }
 
-                // 3. Kiểm tra ngày đăng ký (logic từ trg_KiemTraNgayDangKy) - TRƯỚC KHI gọi procedure
                 string dateCheckQuery = @"
                     SELECT
                         CASE
-                            WHEN GETDATE() < hk.NgayBatDau THEN 0  -- Quá sớm
-                            WHEN GETDATE() > hk.NgayKetThuc THEN 1  -- Quá muộn
-                            ELSE 2  -- Trong khoảng cho phép
+                            WHEN GETDATE() < hk.NgayBatDau THEN 0
+                            WHEN GETDATE() > hk.NgayKetThuc THEN 1
+                            ELSE 2
                         END AS TrangThai,
                         hk.NgayBatDau,
                         hk.NgayKetThuc,
@@ -149,13 +172,13 @@ namespace QuanLySinhVien.Controllers
                     }
                 }
 
-                // 4. Sử dụng fn_KiemTraTienQuyet - giữ nguyên SQL function logic
                 string getMHQuery = "SELECT MaMH FROM LopHocPhan WHERE MaLHP = @MaLHP";
                 SqlParameter[] getMHParams = new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) };
-                string maMH = db.ExecuteScalar(getMHQuery, getMHParams)?.ToString();
+                object maMHObj = db.ExecuteScalar(getMHQuery, getMHParams);
 
-                if (!string.IsNullOrEmpty(maMH))
+                if (maMHObj != null)
                 {
+                    string maMH = maMHObj.ToString();
                     string prereqQuery = "SELECT dbo.fn_KiemTraTienQuyet(@MaSV, @MaMH)";
                     SqlParameter[] prereqParams = new SqlParameter[]
                     {
@@ -173,7 +196,6 @@ namespace QuanLySinhVien.Controllers
                     }
                 }
 
-                // Sau khi qua tất cả validation, mới gọi stored procedure
                 SqlParameter[] parameters = new SqlParameter[]
                 {
                     new SqlParameter("@MaSV", MaSV),
@@ -182,7 +204,6 @@ namespace QuanLySinhVien.Controllers
 
                 db.ExecuteStoredProcedureNonQuery("sp_DangKyMonHoc", parameters);
 
-                // Post-execution validation - kiểm tra kết quả thực tế
                 string checkResultQuery = "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
                 SqlParameter[] checkResultParams = new SqlParameter[]
                 {
@@ -205,7 +226,7 @@ namespace QuanLySinhVien.Controllers
             {
                 if (ex.Number == 2812)
                 {
-                    TempData["ErrorMessage"] = "Lỗi: Stored procedure 'sp_DangKyMonHoc' chưa được tạo. Vui lòng thực thi script CauTrucXuLy_Final.sql.";
+                    TempData["ErrorMessage"] = "Lỗi: Stored procedure 'sp_DangKyMonHoc' chưa được tạo.";
                 }
                 else if (ex.Number == 50000)
                 {
@@ -226,13 +247,11 @@ namespace QuanLySinhVien.Controllers
             return View();
         }
 
-        // GET: DangKyHocPhan/Edit
+        // ✅ GET Edit — giữ nguyên, chỉ sửa parse để không mất phần thập phân
         public ActionResult Edit(string maSV, string maLHP)
         {
             if (string.IsNullOrEmpty(maSV) || string.IsNullOrEmpty(maLHP))
-            {
                 return HttpNotFound();
-            }
 
             string query = @"SELECT 
                             dk.*, sv.HoTenSV, mh.TenMH
@@ -242,18 +261,13 @@ namespace QuanLySinhVien.Controllers
                             INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
                             WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
 
-            SqlParameter[] parameters = new SqlParameter[]
-            {
+            SqlParameter[] parameters = {
                 new SqlParameter("@MaSV", maSV),
                 new SqlParameter("@MaLHP", maLHP)
             };
 
             DataTable dt = db.ExecuteQuery(query, parameters);
-
-            if (dt.Rows.Count == 0)
-            {
-                return HttpNotFound();
-            }
+            if (dt.Rows.Count == 0) return HttpNotFound();
 
             DataRow row = dt.Rows[0];
             DangKyHocPhan dk = new DangKyHocPhan
@@ -261,62 +275,67 @@ namespace QuanLySinhVien.Controllers
                 MaSV = row["MaSV"].ToString(),
                 MaLHP = row["MaLHP"].ToString(),
                 NgayDangKy = Convert.ToDateTime(row["NgayDangKy"]),
-                DiemChuyenCan = row["DiemChuyenCan"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemChuyenCan"]) : null,
-                DiemGiuaKy = row["DiemGiuaKy"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemGiuaKy"]) : null,
-                DiemCuoiKy = row["DiemCuoiKy"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemCuoiKy"]) : null,
-                DiemTongKet = row["DiemTongKet"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemTongKet"]) : null,
+                DiemChuyenCan = ParseDbFloat(row["DiemChuyenCan"]),
+                DiemGiuaKy = ParseDbFloat(row["DiemGiuaKy"]),
+                DiemCuoiKy = ParseDbFloat(row["DiemCuoiKy"]),
+                DiemTongKet = ParseDbFloat(row["DiemTongKet"]),
                 HoTenSV = row["HoTenSV"].ToString(),
                 TenMH = row["TenMH"].ToString()
             };
-
             return View(dk);
         }
 
-        // POST: DangKyHocPhan/Edit
+        // ✅ POST Edit — cho phép nhập 1.5 hoặc 1,5, tính đúng điểm tổng kết
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(DangKyHocPhan dangKy)
+        public ActionResult Edit(string MaSV, string MaLHP, string DiemChuyenCan, string DiemGiuaKy, string DiemCuoiKy)
         {
             try
             {
-                string query = @"UPDATE DangKyHocPhan 
-                               SET DiemChuyenCan = @DiemChuyenCan,
-                                   DiemGiuaKy = @DiemGiuaKy,
-                                   DiemCuoiKy = @DiemCuoiKy
-                               WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
+                float? diemCC = ParseInputFloat(DiemChuyenCan);
+                float? diemGK = ParseInputFloat(DiemGiuaKy);
+                float? diemCK = ParseInputFloat(DiemCuoiKy);
 
-                SqlParameter[] parameters = new SqlParameter[]
-                {
-                    new SqlParameter("@MaSV", dangKy.MaSV),
-                    new SqlParameter("@MaLHP", dangKy.MaLHP),
-                    new SqlParameter("@DiemChuyenCan", (object)dangKy.DiemChuyenCan ?? DBNull.Value),
-                    new SqlParameter("@DiemGiuaKy", (object)dangKy.DiemGiuaKy ?? DBNull.Value),
-                    new SqlParameter("@DiemCuoiKy", (object)dangKy.DiemCuoiKy ?? DBNull.Value)
+                float? diemTongKet = null;
+                if (diemCC.HasValue && diemGK.HasValue && diemCK.HasValue)
+                    diemTongKet = (float)Math.Round((diemCC.Value * 0.1f) + (diemGK.Value * 0.3f) + (diemCK.Value * 0.6f), 2);
+
+                string query = @"UPDATE DangKyHocPhan 
+                       SET DiemChuyenCan = @DiemChuyenCan,
+                           DiemGiuaKy = @DiemGiuaKy,
+                           DiemCuoiKy = @DiemCuoiKy,
+                           DiemTongKet = @DiemTongKet
+                       WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
+
+                SqlParameter[] parameters = {
+                    new SqlParameter("@MaSV", MaSV),
+                    new SqlParameter("@MaLHP", MaLHP),
+                    new SqlParameter("@DiemChuyenCan", (object)diemCC ?? DBNull.Value),
+                    new SqlParameter("@DiemGiuaKy", (object)diemGK ?? DBNull.Value),
+                    new SqlParameter("@DiemCuoiKy", (object)diemCK ?? DBNull.Value),
+                    new SqlParameter("@DiemTongKet", (object)diemTongKet ?? DBNull.Value)
                 };
 
                 int result = db.ExecuteNonQuery(query, parameters);
-
                 if (result > 0)
-                {
                     TempData["SuccessMessage"] = "Cập nhật điểm thành công!";
-                    return RedirectToAction("Index");
-                }
+                else
+                    TempData["ErrorMessage"] = "Không có thay đổi hoặc không tìm thấy dữ liệu.";
+
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = "Lỗi: " + ex.Message;
+                return RedirectToAction("Edit", new { maSV = MaSV, maLHP = MaLHP });
             }
-
-            return View(dangKy);
         }
 
-        // GET: DangKyHocPhan/Delete
+        // === Giữ nguyên Delete & Helper methods ===
         public ActionResult Delete(string maSV, string maLHP)
         {
             if (string.IsNullOrEmpty(maSV) || string.IsNullOrEmpty(maLHP))
-            {
                 return HttpNotFound();
-            }
 
             string query = @"SELECT 
                             dk.*, sv.HoTenSV, mh.TenMH, hk.TenHK
@@ -327,18 +346,14 @@ namespace QuanLySinhVien.Controllers
                             INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
                             WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
 
-            SqlParameter[] parameters = new SqlParameter[]
-            {
+            SqlParameter[] parameters = {
                 new SqlParameter("@MaSV", maSV),
                 new SqlParameter("@MaLHP", maLHP)
             };
 
             DataTable dt = db.ExecuteQuery(query, parameters);
-
             if (dt.Rows.Count == 0)
-            {
                 return HttpNotFound();
-            }
 
             DataRow row = dt.Rows[0];
             DangKyHocPhan dk = new DangKyHocPhan
@@ -350,11 +365,9 @@ namespace QuanLySinhVien.Controllers
                 TenMH = row["TenMH"].ToString(),
                 TenHK = row["TenHK"].ToString()
             };
-
             return View(dk);
         }
 
-        // POST: DangKyHocPhan/Delete
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(string maSV, string maLHP)
@@ -362,29 +375,21 @@ namespace QuanLySinhVien.Controllers
             try
             {
                 string query = "DELETE FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
-
-                SqlParameter[] parameters = new SqlParameter[]
-                {
+                SqlParameter[] parameters = {
                     new SqlParameter("@MaSV", maSV),
                     new SqlParameter("@MaLHP", maLHP)
                 };
-
                 int result = db.ExecuteNonQuery(query, parameters);
-
                 if (result > 0)
-                {
                     TempData["SuccessMessage"] = "Hủy đăng ký học phần thành công!";
-                }
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = "Lỗi: " + ex.Message;
             }
-
             return RedirectToAction("Index");
         }
 
-        // Helper methods
         private void LoadDanhSachSinhVien()
         {
             string query = "SELECT MaSV, HoTenSV FROM SinhVien ORDER BY HoTenSV";
@@ -399,7 +404,6 @@ namespace QuanLySinhVien.Controllers
                     Text = row["MaSV"] + " - " + row["HoTenSV"].ToString()
                 });
             }
-
             ViewBag.DanhSachSinhVien = danhSach;
         }
 
@@ -413,7 +417,6 @@ namespace QuanLySinhVien.Controllers
                            ORDER BY hk.TenHK, mh.TenMH";
 
             DataTable dt = db.ExecuteQuery(query);
-
             List<SelectListItem> danhSach = new List<SelectListItem>();
             foreach (DataRow row in dt.Rows)
             {
@@ -423,7 +426,6 @@ namespace QuanLySinhVien.Controllers
                     Text = row["MaLHP"] + " - " + row["TenMH"] + " (" + row["TenHK"] + ")"
                 });
             }
-
             ViewBag.DanhSachLopHocPhan = danhSach;
         }
     }

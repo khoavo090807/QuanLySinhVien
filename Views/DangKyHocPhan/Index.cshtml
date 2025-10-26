@@ -23,8 +23,7 @@
         <!-- Form tìm kiếm -->
         <div class="row mb-3">
             <div class="col-md-6">
-                @using (Html.BeginForm("Index", "DangKyHocPhan", FormMethod.Get, new { @class = "d-flex" }))
-                {
+                <form method="get" action="@Url.Action("Index")" class="d-flex">
                     <input type="text" name="maSV" class="form-control me-2"
                            placeholder="Nhập mã sinh viên để lọc..."
                            value="@ViewBag.MaSV" />
@@ -34,11 +33,11 @@
                     <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
                         <i class="fas fa-redo"></i>
                     </a>
-                }
+                </form>
             </div>
             <div class="col-md-6 text-end">
                 <span class="badge bg-info text-dark fs-6">
-                    Tổng số: @Model.Count() lượt đăng ký
+                    Tổng số: @ViewBag.TotalCount lượt đăng ký
                 </span>
             </div>
         </div>
@@ -78,44 +77,47 @@
                                 <td class="text-center">
                                     @if (item.DiemChuyenCan.HasValue)
                                     {
-                                        <span class="badge bg-success">@item.DiemChuyenCan.Value.ToString("0.0")</span>
+                                        <span class="badge bg-success">
+                                            @item.DiemChuyenCan.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                                        </span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     @if (item.DiemGiuaKy.HasValue)
                                     {
-                                        <span class="badge bg-success">@item.DiemGiuaKy.Value.ToString("0.0")</span>
+                                        <span class="badge bg-success">
+                                            @item.DiemGiuaKy.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                                        </span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     @if (item.DiemCuoiKy.HasValue)
                                     {
-                                        <span class="badge bg-success">@item.DiemCuoiKy.Value.ToString("0.0")</span>
+                                        <span class="badge bg-success">
+                                            @item.DiemCuoiKy.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                                        </span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     @if (item.DiemTongKet.HasValue)
                                     {
                                         var diemTK = item.DiemTongKet.Value;
-                                        var cssClass = diemTK >= 8 ? "bg-success" : (diemTK >= 5 ? "bg-warning" : "bg-danger");
-                                        <span class="badge @cssClass">@diemTK.ToString("0.0")</span>
+                                        var cssClass = diemTK >= 8.5 ? "bg-success" :
+                                                      (diemTK >= 7.0 ? "bg-info" :
+                                                      (diemTK >= 5.5 ? "bg-warning text-dark" :
+                                                      (diemTK >= 4.0 ? "bg-secondary" : "bg-danger")));
+                                        <span class="badge @cssClass">
+                                            @diemTK.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)
+                                        </span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
@@ -145,7 +147,6 @@
             </table>
         </div>
 
-        <!-- Chú thích -->
         <div class="mt-3">
             <small class="text-muted">
                 <strong>Chú thích:</strong>

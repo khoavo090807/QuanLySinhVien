@@ -1,123 +1,161 @@
 ﻿@model QuanLySinhVien.Models.DangKyHocPhan
 
 @{
-    ViewBag.Title = "Nhập điểm sinh viên";
+    ViewBag.Title = "Nhập/Sửa điểm sinh viên";
 }
 
 <div class="row mb-4">
     <div class="col-12">
         <h2 class="page-title">
-            <i class="fas fa-edit"></i> Nhập điểm cho sinh viên
+            <i class="fas fa-edit"></i> Nhập/Sửa điểm cho sinh viên
         </h2>
     </div>
 </div>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="card">
-    <div class="card-header">
+    <div class="card-header bg-primary text-white">
         <i class="fas fa-graduation-cap"></i> Thông tin sinh viên và môn học
     </div>
     <div class="card-body">
-        <div class="alert alert-info" role="alert">
-            <div class="row">
-                <div class="col-md-6">
-                    <strong><i class="fas fa-user"></i> Sinh viên:</strong> @Model.HoTenSV (@Model.MaSV)
+        <div class="row mb-4 p-3 bg-light rounded">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <strong><i class="fas fa-user-circle text-primary"></i> Mã sinh viên:</strong>
+                    <br />
+                    <span class="badge bg-primary fs-6">@Model.MaSV</span>
                 </div>
-                <div class="col-md-6">
-                    <strong><i class="fas fa-book"></i> Môn học:</strong> @Model.TenMH (@Model.MaLHP)
+                <div class="mb-3">
+                    <strong><i class="fas fa-user text-success"></i> Họ tên:</strong>
+                    <br />
+                    <span class="text-success">@Model.HoTenSV</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <strong><i class="fas fa-book text-info"></i> Mã lớp học phần:</strong>
+                    <br />
+                    <span class="badge bg-info fs-6">@Model.MaLHP</span>
+                </div>
+                <div class="mb-3">
+                    <strong><i class="fas fa-bookmark text-warning"></i> Môn học:</strong>
+                    <br />
+                    <span class="text-warning">@Model.TenMH</span>
                 </div>
             </div>
         </div>
 
+        <hr />
+
         @using (Html.BeginForm("Edit", "DangKyHocPhan", FormMethod.Post))
         {
             @Html.AntiForgeryToken()
-            @Html.HiddenFor(model => model.MaSV)
-            @Html.HiddenFor(model => model.MaLHP)
+            <input type="hidden" name="MaSV" value="@Model.MaSV" />
+            <input type="hidden" name="MaLHP" value="@Model.MaLHP" />
 
             <div class="row">
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-check-circle text-success"></i> Điểm chuyên cần (10%)
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-check-circle text-success"></i> Điểm Chuyên Cần (10%)
                         </label>
-                        @Html.TextBoxFor(model => model.DiemChuyenCan,
-                            new { @class = "form-control", type = "number", step = "0.1", min = "0", max = "10", placeholder = "0.0" })
-                        @Html.ValidationMessageFor(model => model.DiemChuyenCan, "", new { @class = "text-danger" })
+                        <div class="input-group">
+                            <input type="number" id="DiemChuyenCan" name="DiemChuyenCan"
+                                   class="form-control" step="any" min="0" max="10"
+                                   value="@(Model.DiemChuyenCan.HasValue ? Model.DiemChuyenCan.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                   placeholder="0.0" />
+                            <span class="input-group-text">/10</span>
+                        </div>
+                        <small class="text-muted d-block mt-2">Nhập giá trị từ 0 đến 10 (VD: 7.5)</small>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-pencil-alt text-warning"></i> Điểm giữa kỳ (30%)
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-pencil-alt text-warning"></i> Điểm Giữa Kỳ (30%)
                         </label>
-                        @Html.TextBoxFor(model => model.DiemGiuaKy,
-                            new { @class = "form-control", type = "number", step = "0.1", min = "0", max = "10", placeholder = "0.0" })
-                        @Html.ValidationMessageFor(model => model.DiemGiuaKy, "", new { @class = "text-danger" })
+                        <div class="input-group">
+                            <input type="number" id="DiemGiuaKy" name="DiemGiuaKy"
+                                   class="form-control" step="any" min="0" max="10"
+                                   value="@(Model.DiemGiuaKy.HasValue ? Model.DiemGiuaKy.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                   placeholder="0.0" />
+                            <span class="input-group-text">/10</span>
+                        </div>
+                        <small class="text-muted d-block mt-2">Nhập giá trị từ 0 đến 10 (VD: 8.5)</small>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-file-alt text-danger"></i> Điểm cuối kỳ (60%)
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-file-alt text-danger"></i> Điểm Cuối Kỳ (60%)
                         </label>
-                        @Html.TextBoxFor(model => model.DiemCuoiKy,
-                            new { @class = "form-control", type = "number", step = "0.1", min = "0", max = "10", placeholder = "0.0" })
-                        @Html.ValidationMessageFor(model => model.DiemCuoiKy, "", new { @class = "text-danger" })
+                        <div class="input-group">
+                            <input type="number" id="DiemCuoiKy" name="DiemCuoiKy"
+                                   class="form-control" step="any" min="0" max="10"
+                                   value="@(Model.DiemCuoiKy.HasValue ? Model.DiemCuoiKy.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                   placeholder="0.0" />
+                            <span class="input-group-text">/10</span>
+                        </div>
+                        <small class="text-muted d-block mt-2">Nhập giá trị từ 0 đến 10 (VD: 9.0)</small>
                     </div>
                 </div>
             </div>
 
-            @if (Model.DiemTongKet.HasValue)
-            {
-                <div class="alert alert-success" role="alert">
-                    <h5 class="alert-heading">
-                        <i class="fas fa-trophy"></i> Điểm tổng kết hiện tại
-                    </h5>
-                    <hr>
-                    <p class="mb-0">
-                        <strong style="font-size: 24px; color: #155724;">@Model.DiemTongKet.Value.ToString("0.00")</strong>
-                        <span class="ms-3">
-                            @if (Model.DiemTongKet >= 8.5)
-                            {
-                                <span class="badge bg-success">Giỏi</span>
-                            }
-                            else if (Model.DiemTongKet >= 7.0)
-                            {
-                                <span class="badge bg-info">Khá</span>
-                            }
-                            else if (Model.DiemTongKet >= 5.5)
-                            {
-                                <span class="badge bg-warning text-dark">Trung bình</span>
-                            }
-                            else if (Model.DiemTongKet >= 4.0)
-                            {
-                                <span class="badge bg-secondary">Yếu</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">Kém</span>
-                            }
-                        </span>
-                    </p>
-                </div>
-            }
+            <hr class="my-4" />
 
-            <div class="alert alert-warning" role="alert">
-                <i class="fas fa-info-circle"></i>
-                <strong>Công thức tính:</strong>
-                Điểm TK = (Điểm CC × 10%) + (Điểm GK × 30%) + (Điểm CK × 60%)
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card bg-light border-info">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-calculator text-primary"></i> Tính Toán Điểm Tổng Kết
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-0"><strong>Công thức:</strong></p>
+                                    <p class="text-muted small">
+                                        Điểm TK = (CC × 10%) + (GK × 30%) + (CK × 60%)
+                                    </p>
+                                </div>
+                                <div class="col-md-6 text-center">
+                                    <p class="mb-1"><strong>Điểm Tổng Kết Dự Kiến:</strong></p>
+                                    <h2 id="diemDuKien" class="text-primary fw-bold">0.00</h2>
+                                    <p id="xepLoaiDuKien" class="mb-0"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <hr />
+            <hr class="my-4" />
 
             <div class="text-end">
-                <a href="@Url.Action("Index")" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Hủy
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Quay lại
                 </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Lưu điểm
+                <button type="reset" class="btn btn-warning btn-lg">
+                    <i class="fas fa-redo"></i> Đặt lại
+                </button>
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save"></i> Lưu Điểm
                 </button>
             </div>
         }
@@ -125,41 +163,35 @@
 </div>
 
 @section scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-
     <script>
-        // Tính điểm tổng kết tự động
-        function tinhDiemTongKet() {
-            var cc = parseFloat($('#DiemChuyenCan').val()) || 0;
-            var gk = parseFloat($('#DiemGiuaKy').val()) || 0;
-            var ck = parseFloat($('#DiemCuoiKy').val()) || 0;
-
-            var tongKet = (cc * 0.1) + (gk * 0.3) + (ck * 0.6);
-
-            // Kiểm tra xem có bất kỳ điểm nào được nhập chưa (khác 0)
-            if (cc > 0 || gk > 0 || ck > 0) {
-                $('#diemPreview').html(
-                    '<strong>Điểm dự kiến: </strong>' +
-                    '<span class="text-primary" style="font-size: 18px;">' +
-                    tongKet.toFixed(2) +
-                    '</span>'
-                );
-            } else {
-                // Xóa nội dung hiển thị nếu tất cả điểm là 0
-                $('#diemPreview').html('');
-            }
+        function getXepLoai(diem) {
+            if (diem >= 8.5) return { text: 'Giỏi', class: 'bg-success' };
+            if (diem >= 7.0) return { text: 'Khá', class: 'bg-info' };
+            if (diem >= 5.5) return { text: 'Trung bình', class: 'bg-warning text-dark' };
+            if (diem >= 4.0) return { text: 'Yếu', class: 'bg-secondary' };
+            return { text: 'Kém', class: 'bg-danger' };
         }
 
-        $(document).ready(function () {
-            // Thêm div hiển thị điểm dự kiến
-            $('button[type="submit"]').before('<div id="diemPreview" class="mb-3 text-center"></div>');
+        function tinhDiemTongKet() {
+            const parseNum = val => parseFloat(val.replace(',', '.')) || 0;
+            const cc = parseNum(document.getElementById('DiemChuyenCan').value);
+            const gk = parseNum(document.getElementById('DiemGiuaKy').value);
+            const ck = parseNum(document.getElementById('DiemCuoiKy').value);
 
-            // Tính khi nhập điểm
-            $('#DiemChuyenCan, #DiemGiuaKy, #DiemCuoiKy').on('input', tinhDiemTongKet);
+            const tongKet = Math.round(((cc * 0.1) + (gk * 0.3) + (ck * 0.6)) * 100) / 100;
 
-            // Tính ngay khi load trang
+            document.getElementById('diemDuKien').textContent = tongKet.toFixed(2);
+            const xl = getXepLoai(tongKet);
+            document.getElementById('xepLoaiDuKien').innerHTML =
+                '<span class="badge ' + xl.class + ' fs-6">' + xl.text + '</span>';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
             tinhDiemTongKet();
+
+            ['DiemChuyenCan', 'DiemGiuaKy', 'DiemCuoiKy'].forEach(id => {
+                document.getElementById(id).addEventListener('input', tinhDiemTongKet);
+            });
         });
     </script>
 }

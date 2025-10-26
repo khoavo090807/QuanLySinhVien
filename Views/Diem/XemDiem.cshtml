@@ -38,11 +38,18 @@
             <div class="row">
                 <div class="col-md-8">
                     <label class="form-label">Chọn sinh viên:</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-user-graduate"></i></span>
-                        @Html.DropDownList("maSV",
-                            (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
-                            new { @class = "form-select" })
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            @using (Html.BeginForm("Index", "SinhVien", FormMethod.Get, new { @class = "d-flex" }))
+                            {
+                                <input type="text" name="searchString" class="form-control me-2"
+                                       placeholder="Tìm kiếm theo mã SV, tên, email..."
+                                       value="@ViewBag.SearchString" />
+                               
+                                
+                            }
+                        </div>
+                        
                     </div>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">

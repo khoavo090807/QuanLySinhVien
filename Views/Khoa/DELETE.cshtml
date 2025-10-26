@@ -1,0 +1,61 @@
+﻿@model QuanLySinhVien.Models.Khoa
+
+@{
+    ViewBag.Title = "Xóa khoa";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-trash-alt"></i> Xác nhận xóa khoa
+        </h2>
+    </div>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Cảnh báo xóa dữ liệu
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+            Không thể xóa khoa nếu vẫn còn lớp học hoặc giáo viên!
+        </div>
+
+        <h4 class="mb-4">Thông tin khoa sẽ bị xóa:</h4>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <dl class="row">
+                    <dt class="col-sm-4">Mã khoa:</dt>
+                    <dd class="col-sm-8"><strong class="text-primary">@Model.MaKhoa</strong></dd>
+
+                    <dt class="col-sm-4">Tên khoa:</dt>
+                    <dd class="col-sm-8">@Model.TenKhoa</dd>
+
+                    <dt class="col-sm-4">Số điện thoại:</dt>
+                    <dd class="col-sm-8">@Model.SoDienThoai</dd>
+
+                    
+                </dl>
+            </div>
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("Delete", "Khoa", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaKhoa)
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Hủy bỏ
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn xóa khoa này?');">
+                    <i class="fas fa-trash"></i> Xác nhận xóa
+                </button>
+            </div>
+        }
+    </div>
+</div>

@@ -1,4 +1,5 @@
-﻿@model IEnumerable<QuanLySinhVien.Models.SinhVien>
+﻿
+@model IEnumerable<QuanLySinhVien.Models.SinhVien>
 
 @{
     ViewBag.Title = "Danh sách sinh viên";
@@ -128,7 +129,7 @@
 @section scripts {
     <script>
         // Tự động ẩn thông báo sau 3 giây
-        setTimeout(function() {
+        setTimeout(function () {
             $('.alert').fadeOut('slow');
         }, 3000);
     </script>

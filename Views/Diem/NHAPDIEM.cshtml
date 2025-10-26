@@ -1,0 +1,204 @@
+﻿<!-- ============================================
+     VIEWS/DIEM/NHAPDIEM.CSHTML
+     FIX LỖI: 'HtmlHelper<dynamic>' has no applicable method named 'Hidden'
+     ============================================ -->
+
+@{
+    ViewBag.Title = "Nhập điểm sinh viên";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-edit"></i> Nhập điểm sinh viên
+        </h2>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ========== BƯỚC 1: CHỌN SINH VIÊN ========== -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-search"></i> Bước 1: Chọn sinh viên
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("NhapDiem", "Diem", FormMethod.Get))
+        {
+            <div class="row">
+                <div class="col-md-8">
+                    <label class="form-label"><strong>Sinh viên:</strong></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user-graduate"></i></span>
+                        @Html.DropDownList("maSV",
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
+                            new { @class = "form-select" })
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-check"></i> Tải danh sách môn
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ========== BƯỚC 2: NHẬP ĐIỂM ========== -->
+@if (ViewBag.DanhSachMonHoc != null && ViewBag.DanhSachMonHoc.Count > 0)
+{
+    <div class="card mt-3">
+        <div class="card-header">
+            <i class="fas fa-pencil-alt"></i> Bước 2: Nhập điểm - Sinh viên: <strong>@ViewBag.MaSV</strong>
+        </div>
+        <div class="card-body">
+            @using (Html.BeginForm("NhapDiem", "Diem", FormMethod.Post))
+            {
+                <!-- INPUT ẨN: GỬI MÃ SINH VIÊN -->
+                <input type="hidden" name="maSV" value="@ViewBag.MaSV" />
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Hướng dẫn:</strong> Nhập điểm chuyên cần, giữa kỳ, cuối kỳ.
+                    Điểm tổng kết sẽ tự động tính: (ĐCC × 10%) + (ĐGK × 30%) + (ĐCK × 60%)
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 12%;">Mã LHP</th>
+                                <th style="width: 30%;">Tên môn học</th>
+                                <th style="width: 8%;" class="text-center">TC</th>
+                                <th style="width: 12%;" class="text-center">Điểm CC (10%)</th>
+                                <th style="width: 12%;" class="text-center">Điểm GK (30%)</th>
+                                <th style="width: 12%;" class="text-center">Điểm CK (60%)</th>
+                                <th style="width: 14%;" class="text-center">Tổng kết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int index = 0;
+                                foreach (var mon in ViewBag.DanhSachMonHoc)
+                                {
+                                    <tr>
+                                        <td><strong>@mon.MaLHP</strong></td>
+                                        <td>@mon.TenMH</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">@(mon.SoTinChi != 0 ? mon.SoTinChi : 0)</span>
+                                        </td>
+                                        <!-- ĐIỂM CHUYÊN CẦN -->
+                                        <td>
+                                            <input type="number"
+                                                   step="0.1"
+                                                   min="0"
+                                                   max="10"
+                                                   class="form-control form-control-sm diem-cc"
+                                                   name="DiemChuyenCan_@mon.MaLHP"
+                                                   value="@(mon.DiemChuyenCan != null ? ((float)mon.DiemChuyenCan).ToString("0.0") : "")"
+                                                   placeholder="0.0" />
+                                        </td>
+                                        <!-- ĐIỂM GIỮA KỲ -->
+                                        <td>
+                                            <input type="number"
+                                                   step="0.1"
+                                                   min="0"
+                                                   max="10"
+                                                   class="form-control form-control-sm diem-gk"
+                                                   name="DiemGiuaKy_@mon.MaLHP"
+                                                   value="@(mon.DiemGiuaKy != null ? ((float)mon.DiemGiuaKy).ToString("0.0") : "")"
+                                                   placeholder="0.0" />
+                                        </td>
+                                        <!-- ĐIỂM CUỐI KỲ -->
+                                        <td>
+                                            <input type="number"
+                                                   step="0.1"
+                                                   min="0"
+                                                   max="10"
+                                                   class="form-control form-control-sm diem-ck"
+                                                   name="DiemCuoiKy_@mon.MaLHP"
+                                                   value="@(mon.DiemCuoiKy != null ? ((float)mon.DiemCuoiKy).ToString("0.0") : "")"
+                                                   placeholder="0.0" />
+                                        </td>
+                                        <!-- ĐIỂM TỔNG KẾT (chỉ đọc) -->
+                                        <td>
+                                            <input type="text"
+                                                   class="form-control form-control-sm text-center diem-tk"
+                                                   readonly
+                                                   value="@(mon.DiemTongKet != null ? ((float)mon.DiemTongKet).ToString("0.00") : "-")"
+                                                   style="background-color: #f0f0f0; font-weight: bold;" />
+                                        </td>
+                                    </tr>
+                                    index++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <hr />
+
+                <div class="text-end">
+                    <a href="@Url.Action("NhapDiem")" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-save"></i> Lưu tất cả điểm
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT: TÍNH ĐIỂM TỔNG KẾT TỰ ĐỘNG -->
+    <script>
+        $(document).ready(function () {
+            // Hàm tính điểm tổng kết
+            function tinhDiemTongKet(row) {
+                var cc = parseFloat(row.find('.diem-cc').val()) || 0;
+                var gk = parseFloat(row.find('.diem-gk').val()) || 0;
+                var ck = parseFloat(row.find('.diem-ck').val()) || 0;
+
+                if (cc > 0 || gk > 0 || ck > 0) {
+                    var tk = (cc * 0.1) + (gk * 0.3) + (ck * 0.6);
+                    row.find('.diem-tk').val(tk.toFixed(2));
+                } else {
+                    row.find('.diem-tk').val('-');
+                }
+            }
+
+            // Khi nhập điểm -> tính tổng kết tự động
+            $('table tbody').on('change keyup', '.diem-cc, .diem-gk, .diem-ck', function () {
+                var row = $(this).closest('tr');
+                tinhDiemTongKet(row);
+            });
+
+            // Tính ngay lần đầu tiên khi load trang
+            $('table tbody tr').each(function () {
+                tinhDiemTongKet($(this));
+            });
+        });
+    </script>
+}
+else
+{
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle"></i>
+        <strong>Hướng dẫn:</strong> Chọn sinh viên từ Bước 1 để xem danh sách môn học cần nhập điểm
+    </div>
+}

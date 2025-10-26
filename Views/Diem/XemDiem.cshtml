@@ -1,0 +1,171 @@
+﻿@model IEnumerable<QuanLySinhVien.Models.DiemThongKe>
+
+@{
+    ViewBag.Title = "Xem điểm sinh viên";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-chart-line"></i> Xem điểm sinh viên
+        </h2>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-search"></i> Tìm kiếm sinh viên
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("XemDiem", "Diem", FormMethod.Get))
+        {
+            <div class="row">
+                <div class="col-md-8">
+                    <label class="form-label">Chọn sinh viên:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user-graduate"></i></span>
+                        @Html.DropDownList("maSV",
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
+                            new { @class = "form-select" })
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Xem điểm
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-chart-bar"></i> Điểm trung bình</h5>
+                    <h2 class="text-primary">@ViewBag.DiemTrungBinh</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-star"></i> Tổng tín chỉ đạt</h5>
+                    <h2 class="text-success">@ViewBag.TongTinChi</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5><i class="fas fa-book"></i> Số môn học</h5>
+                    <h2 class="text-info">@Model.Count()</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <i class="fas fa-list"></i> Bảng điểm chi tiết
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Mã LHP</th>
+                            <th>Tên môn học</th>
+                            <th class="text-center">TC</th>
+                            <th class="text-center">ĐCC (10%)</th>
+                            <th class="text-center">ĐGK (30%)</th>
+                            <th class="text-center">ĐCK (60%)</th>
+                            <th class="text-center">ĐTK</th>
+                            <th class="text-center">Xếp loại</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td><span class="badge bg-secondary">@item.MaLHP</span></td>
+                                <td>@item.TenMH</td>
+                                <td class="text-center">@item.SoTinChi</td>
+                                <td class="text-center">
+                                    @if (item.DiemChuyenCan.HasValue)
+                                    {
+                                        <span class="badge bg-success">@item.DiemChuyenCan.Value.ToString("0.0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.DiemGiuaKy.HasValue)
+                                    {
+                                        <span class="badge bg-success">@item.DiemGiuaKy.Value.ToString("0.0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.DiemCuoiKy.HasValue)
+                                    {
+                                        <span class="badge bg-success">@item.DiemCuoiKy.Value.ToString("0.0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.DiemTongKet.HasValue)
+                                    {
+                                        var dtk = item.DiemTongKet.Value;
+                                        var cssClass = dtk >= 8.5 ? "bg-success" : (dtk >= 7 ? "bg-info" : (dtk >= 5.5 ? "bg-warning" : (dtk >= 4 ? "bg-secondary" : "bg-danger")));
+                                        <span class="badge @cssClass">@dtk.ToString("0.00")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">@item.XepLoai</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle"></i> Vui lòng chọn sinh viên để xem điểm
+    </div>
+}

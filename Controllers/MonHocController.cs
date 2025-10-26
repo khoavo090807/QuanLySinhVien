@@ -12,13 +12,29 @@ namespace QuanLySinhVien.Controllers
     {
         private DatabaseHelper db = new DatabaseHelper();
 
-        // GET: MonHoc
-        public ActionResult Index()
+        public ActionResult Index(string searchString)
         {
-            List<MonHoc> danhSachMH = new List<MonHoc>();
+            List<MonHoc> danhSachMh = new List<MonHoc>();
 
-            string query = "SELECT * FROM MonHoc ORDER BY MaMH";
-            DataTable dt = db.ExecuteQuery(query);
+            string query = @"SELECT * 
+                            FROM MonHoc 
+
+                            WHERE 1=1";
+
+            SqlParameter[] parameters = null;
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                query += " AND (MonHoc.MaMH LIKE @Search OR MonHoc.TenMH LIKE @Search OR MonHoc.SoTinChi LIKE @Search )";
+                parameters = new SqlParameter[]
+                {
+                    new SqlParameter("@Search", "%" + searchString + "%")
+                };
+            }
+
+            query += " ORDER BY MonHoc.SoTinChi";
+
+            DataTable dt = db.ExecuteQuery(query, parameters);
 
             foreach (DataRow row in dt.Rows)
             {
@@ -26,13 +42,36 @@ namespace QuanLySinhVien.Controllers
                 {
                     MaMH = row["MaMH"].ToString(),
                     TenMH = row["TenMH"].ToString(),
-                    SoTinChi = Convert.ToInt32(row["SoTinChi"])
+                    SoTinChi=Convert.ToInt32(row["SoTinChi"]),
+                    
                 };
-                danhSachMH.Add(mh);
+                danhSachMh.Add(mh);
             }
 
-            return View(danhSachMH);
+            ViewBag.SearchString = searchString;
+            return View(danhSachMh);
         }
+        // GET: MonHoc
+        //public ActionResult Index()
+        //{
+        //    List<MonHoc> danhSachMH = new List<MonHoc>();
+
+        //    string query = "SELECT * FROM MonHoc ORDER BY MaMH";
+        //    DataTable dt = db.ExecuteQuery(query);
+
+        //    foreach (DataRow row in dt.Rows)
+        //    {
+        //        MonHoc mh = new MonHoc
+        //        {
+        //            MaMH = row["MaMH"].ToString(),
+        //            TenMH = row["TenMH"].ToString(),
+        //            SoTinChi = Convert.ToInt32(row["SoTinChi"])
+        //        };
+        //        danhSachMH.Add(mh);
+        //    }
+
+        //    return View(danhSachMH);
+        //}
 
         // GET: MonHoc/Create
         public ActionResult Create()

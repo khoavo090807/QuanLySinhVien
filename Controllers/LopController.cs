@@ -13,7 +13,7 @@ namespace QuanLySinhVien.Controllers
         private DatabaseHelper db = new DatabaseHelper();
 
         // GET: Lop
-        public ActionResult Index()
+        public ActionResult Index(string searchString)
         {
             List<Lop> danhSachLop = new List<Lop>();
 
@@ -22,9 +22,22 @@ namespace QuanLySinhVien.Controllers
                             FROM Lop l
                             LEFT JOIN Khoa k ON l.MaKhoa = k.MaKhoa
                             LEFT JOIN HeDaoTao h ON l.MaHeDT = h.MaHeDT
-                            ORDER BY l.MaLop";
+                            WHERE 1=1";
 
-            DataTable dt = db.ExecuteQuery(query);
+            SqlParameter[] parameters = null;
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                query += " AND (l.MaLop LIKE @Search OR l.TenLop LIKE @Search OR k.TenKhoa LIKE @Search OR h.TenHeDT LIKE @Search)";
+                parameters = new SqlParameter[]
+                {
+                    new SqlParameter("@Search", "%" + searchString + "%")
+                };
+            }
+
+            query += " ORDER BY  l.MaLop";
+
+            DataTable dt = db.ExecuteQuery(query, parameters);
 
             foreach (DataRow row in dt.Rows)
             {
@@ -32,17 +45,21 @@ namespace QuanLySinhVien.Controllers
                 {
                     MaLop = row["MaLop"].ToString(),
                     TenLop = row["TenLop"].ToString(),
-                    SiSo = row["SiSo"] != DBNull.Value ? Convert.ToInt32(row["SiSo"]) : 0,
+                    SiSo = Convert.ToInt32(row["SiSo"]),
                     MaKhoa = row["MaKhoa"].ToString(),
                     MaHeDT = row["MaHeDT"].ToString(),
                     TenKhoa = row["TenKhoa"].ToString(),
                     TenHeDT = row["TenHeDT"].ToString()
+
+
                 };
                 danhSachLop.Add(lop);
             }
 
+            ViewBag.SearchString = searchString;
             return View(danhSachLop);
         }
+
 
         // GET: Lop/Create
         public ActionResult Create()

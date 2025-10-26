@@ -1,0 +1,165 @@
+﻿@model QuanLySinhVien.Models.DangKyHocPhan
+
+@{
+    ViewBag.Title = "Nhập điểm sinh viên";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-edit"></i> Nhập điểm cho sinh viên
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-graduation-cap"></i> Thông tin sinh viên và môn học
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info" role="alert">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong><i class="fas fa-user"></i> Sinh viên:</strong> @Model.HoTenSV (@Model.MaSV)
+                </div>
+                <div class="col-md-6">
+                    <strong><i class="fas fa-book"></i> Môn học:</strong> @Model.TenMH (@Model.MaLHP)
+                </div>
+            </div>
+        </div>
+
+        @using (Html.BeginForm("Edit", "DangKyHocPhan", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaSV)
+            @Html.HiddenFor(model => model.MaLHP)
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-check-circle text-success"></i> Điểm chuyên cần (10%)
+                        </label>
+                        @Html.TextBoxFor(model => model.DiemChuyenCan,
+                            new { @class = "form-control", type = "number", step = "0.1", min = "0", max = "10", placeholder = "0.0" })
+                        @Html.ValidationMessageFor(model => model.DiemChuyenCan, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-pencil-alt text-warning"></i> Điểm giữa kỳ (30%)
+                        </label>
+                        @Html.TextBoxFor(model => model.DiemGiuaKy,
+                            new { @class = "form-control", type = "number", step = "0.1", min = "0", max = "10", placeholder = "0.0" })
+                        @Html.ValidationMessageFor(model => model.DiemGiuaKy, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-file-alt text-danger"></i> Điểm cuối kỳ (60%)
+                        </label>
+                        @Html.TextBoxFor(model => model.DiemCuoiKy,
+                            new { @class = "form-control", type = "number", step = "0.1", min = "0", max = "10", placeholder = "0.0" })
+                        @Html.ValidationMessageFor(model => model.DiemCuoiKy, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.DiemTongKet.HasValue)
+            {
+                <div class="alert alert-success" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-trophy"></i> Điểm tổng kết hiện tại
+                    </h5>
+                    <hr>
+                    <p class="mb-0">
+                        <strong style="font-size: 24px; color: #155724;">@Model.DiemTongKet.Value.ToString("0.00")</strong>
+                        <span class="ms-3">
+                            @if (Model.DiemTongKet >= 8.5)
+                            {
+                                <span class="badge bg-success">Giỏi</span>
+                            }
+                            else if (Model.DiemTongKet >= 7.0)
+                            {
+                                <span class="badge bg-info">Khá</span>
+                            }
+                            else if (Model.DiemTongKet >= 5.5)
+                            {
+                                <span class="badge bg-warning text-dark">Trung bình</span>
+                            }
+                            else if (Model.DiemTongKet >= 4.0)
+                            {
+                                <span class="badge bg-secondary">Yếu</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Kém</span>
+                            }
+                        </span>
+                    </p>
+                </div>
+            }
+
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Công thức tính:</strong>
+                Điểm TK = (Điểm CC × 10%) + (Điểm GK × 30%) + (Điểm CK × 60%)
+            </div>
+
+            <hr />
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Lưu điểm
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+    <script>
+        // Tính điểm tổng kết tự động
+        function tinhDiemTongKet() {
+            var cc = parseFloat($('#DiemChuyenCan').val()) || 0;
+            var gk = parseFloat($('#DiemGiuaKy').val()) || 0;
+            var ck = parseFloat($('#DiemCuoiKy').val()) || 0;
+
+            var tongKet = (cc * 0.1) + (gk * 0.3) + (ck * 0.6);
+
+            // Kiểm tra xem có bất kỳ điểm nào được nhập chưa (khác 0)
+            if (cc > 0 || gk > 0 || ck > 0) {
+                $('#diemPreview').html(
+                    '<strong>Điểm dự kiến: </strong>' +
+                    '<span class="text-primary" style="font-size: 18px;">' +
+                    tongKet.toFixed(2) +
+                    '</span>'
+                );
+            } else {
+                // Xóa nội dung hiển thị nếu tất cả điểm là 0
+                $('#diemPreview').html('');
+            }
+        }
+
+        $(document).ready(function () {
+            // Thêm div hiển thị điểm dự kiến
+            $('button[type="submit"]').before('<div id="diemPreview" class="mb-3 text-center"></div>');
+
+            // Tính khi nhập điểm
+            $('#DiemChuyenCan, #DiemGiuaKy, #DiemCuoiKy').on('input', tinhDiemTongKet);
+
+            // Tính ngay khi load trang
+            tinhDiemTongKet();
+        });
+    </script>
+}

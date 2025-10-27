@@ -409,23 +409,50 @@ namespace QuanLySinhVien.Controllers
 
         private void LoadDanhSachLopHocPhan()
         {
-            string query = @"SELECT lhp.MaLHP, mh.TenMH, hk.TenHK, gv.HoTenGV
-                           FROM LopHocPhan lhp
-                           INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                           INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
-                           LEFT JOIN GiangVien gv ON lhp.MaGV = gv.MaGV
-                           ORDER BY hk.TenHK, mh.TenMH";
+            string query = @"SELECT lhp.MaLHP, 
+                           mh.TenMH, 
+                           hk.TenHK, 
+                           gv.HoTenGV,
+                           lhp.SoLuongToiDa,
+                           hk.NgayBatDau,
+                           hk.NgayKetThuc,
+                           (SELECT COUNT(*) FROM DangKyHocPhan WHERE MaLHP = lhp.MaLHP) AS SoSinhVienDangKy,
+                           CASE 
+                               WHEN GETDATE() < hk.NgayBatDau THEN '(Chưa mở) ' 
+                               WHEN GETDATE() > hk.NgayKetThuc THEN '(Đã đóng) '
+                               ELSE '(Đang mở) '
+                           END AS TrangThaiHK
+                    FROM LopHocPhan lhp
+                    INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                    INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
+                    LEFT JOIN GiangVien gv ON lhp.MaGV = gv.MaGV
+                    ORDER BY hk.NgayBatDau DESC, mh.TenMH";
 
             DataTable dt = db.ExecuteQuery(query);
             List<SelectListItem> danhSach = new List<SelectListItem>();
+
             foreach (DataRow row in dt.Rows)
             {
+                string trangThaiHK = row["TrangThaiHK"].ToString();
+                int soSinhVienDangKy = Convert.ToInt32(row["SoSinhVienDangKy"]);
+                int soLuongToiDa = Convert.ToInt32(row["SoLuongToiDa"]);
+
+                // Kiểm tra nếu lớp đã đầy
+                string dayDuText = soSinhVienDangKy >= soLuongToiDa ? " [ĐÃ ĐẦY]" : "";
+
+                // Hiển thị số lượng sinh viên đã đăng ký
+                string soSVText = $" ({soSinhVienDangKy}/{soLuongToiDa})";
+
                 danhSach.Add(new SelectListItem
                 {
                     Value = row["MaLHP"].ToString(),
-                    Text = row["MaLHP"] + " - " + row["TenMH"] + " (" + row["TenHK"] + ")"
+                    Text = row["MaLHP"] + " - " +
+                           row["TenMH"] + " (" + row["TenHK"] + ") " +
+                           trangThaiHK + soSVText + dayDuText,
+                    Disabled = soSinhVienDangKy >= soLuongToiDa  // Vô hiệu hóa nếu đã đầy
                 });
             }
+
             ViewBag.DanhSachLopHocPhan = danhSach;
         }
     }

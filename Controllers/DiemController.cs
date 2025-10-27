@@ -28,34 +28,35 @@ namespace QuanLySinhVien.Controllers
             if (!string.IsNullOrEmpty(maSV))
             {
                 string query = @"SELECT 
-                                sv.MaSV, 
-                                sv.HoTenSV, 
-                                dk.MaLHP,
-                                mh.TenMH,
-                                mh.SoTinChi,
-                                dk.DiemChuyenCan,
-                                dk.DiemGiuaKy,
-                                dk.DiemCuoiKy,
-                                dk.DiemTongKet,
-                                dk.NgayDangKy
-                                FROM DangKyHocPhan dk
-                                INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
-                                INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
-                                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                                WHERE dk.MaSV = @MaSV
-                                ORDER BY dk.NgayDangKy DESC";
+                        sv.MaSV, 
+                        sv.HoTenSV, 
+                        dk.MaLHP,
+                        mh.TenMH,
+                        mh.SoTinChi,
+                        dk.DiemChuyenCan,
+                        dk.DiemGiuaKy,
+                        dk.DiemCuoiKy,
+                        dk.DiemTongKet,
+                        dk.NgayDangKy
+                        FROM DangKyHocPhan dk
+                        INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
+                        INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
+                        INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                        WHERE dk.MaSV = @MaSV
+                        ORDER BY dk.NgayDangKy DESC";
 
                 SqlParameter[] parameters = new SqlParameter[]
                 {
-                    new SqlParameter("@MaSV", maSV)
+            new SqlParameter("@MaSV", maSV)
                 };
 
                 DataTable dt = db.ExecuteQuery(query, parameters);
 
                 foreach (DataRow row in dt.Rows)
                 {
-                    float? diemTK = row["DiemTongKet"] != DBNull.Value ?
-                        (float?)Convert.ToDouble(row["DiemTongKet"]) : null;
+                    float? diemTK = row["DiemTongKet"] != DBNull.Value
+                        ? (float?)Convert.ToDouble(row["DiemTongKet"])
+                        : null;
 
                     DiemThongKe diem = new DiemThongKe
                     {
@@ -64,17 +65,21 @@ namespace QuanLySinhVien.Controllers
                         MaLHP = row["MaLHP"].ToString(),
                         TenMH = row["TenMH"].ToString(),
                         SoTinChi = Convert.ToInt32(row["SoTinChi"]),
-                        DiemChuyenCan = row["DiemChuyenCan"] != DBNull.Value ?
-                            (float?)Convert.ToDouble(row["DiemChuyenCan"]) : null,
-                        DiemGiuaKy = row["DiemGiuaKy"] != DBNull.Value ?
-                            (float?)Convert.ToDouble(row["DiemGiuaKy"]) : null,
-                        DiemCuoiKy = row["DiemCuoiKy"] != DBNull.Value ?
-                            (float?)Convert.ToDouble(row["DiemCuoiKy"]) : null,
+                        DiemChuyenCan = row["DiemChuyenCan"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemChuyenCan"]) : null,
+                        DiemGiuaKy = row["DiemGiuaKy"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemGiuaKy"]) : null,
+                        DiemCuoiKy = row["DiemCuoiKy"] != DBNull.Value ? (float?)Convert.ToDouble(row["DiemCuoiKy"]) : null,
                         DiemTongKet = diemTK,
                         XepLoai = XepLoaiDiem(diemTK),
                         NgayDangKy = Convert.ToDateTime(row["NgayDangKy"])
                     };
                     danhSachDiem.Add(diem);
+                }
+
+                // Nếu có dữ liệu, gán thêm thông tin sinh viên
+                if (dt.Rows.Count > 0)
+                {
+                    ViewBag.TenSV = dt.Rows[0]["HoTenSV"].ToString();
+                    ViewBag.MaSVHienThi = dt.Rows[0]["MaSV"].ToString();
                 }
 
                 // Tính điểm trung bình
@@ -92,14 +97,16 @@ namespace QuanLySinhVien.Controllers
                         }
                     }
 
-                    ViewBag.DiemTrungBinh = soMonHopLe > 0 ?
-                        Math.Round((decimal)tongDiem / soMonHopLe, 2) : 0;
+                    ViewBag.DiemTrungBinh = soMonHopLe > 0
+                        ? Math.Round((decimal)tongDiem / soMonHopLe, 2)
+                        : 0;
                     ViewBag.TongTinChi = CalculateTotalCredits(danhSachDiem);
                 }
             }
 
             return View(danhSachDiem);
         }
+
 
         // ========== ACTION: NHẬP ĐIỂM ==========
         // GET: Hiển thị form nhập điểm

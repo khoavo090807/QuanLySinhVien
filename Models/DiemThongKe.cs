@@ -8,7 +8,7 @@ namespace QuanLySinhVien.Models
         public string HoTenSV { get; set; }
         public string MaLHP { get; set; }
         public string TenMH { get; set; }
-        public int SoTinChi { get; set; }
+        public int? SoTinChi { get; set; }
 
         public float? DiemChuyenCan { get; set; }
         public float? DiemGiuaKy { get; set; }

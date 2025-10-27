@@ -64,8 +64,8 @@
                     {
                         foreach (var item in Model)
                         {
-                            var cssClass = item.TrangThai == "Đang mở" ? "success" :
-                                          (item.TrangThai == "Chưa mở" ? "warning" : "danger");
+                            var trangThai = item.GetTrangThai();
+                            var cssClass = trangThai == "Đang mở" ? "success" : (trangThai == "Chưa bắt đầu" ? "warning" : "danger");
 
                             <tr>
                                 <td><strong class="text-primary">@item.MaHK</strong></td>

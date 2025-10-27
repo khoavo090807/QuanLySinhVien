@@ -37,19 +37,13 @@
         {
             <div class="row">
                 <div class="col-md-8">
-                    <label class="form-label">Chọn sinh viên:</label>
+                    <label class="form-label">Nhập mã sinh viên:</label>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            @using (Html.BeginForm("Index", "SinhVien", FormMethod.Get, new { @class = "d-flex" }))
-                            {
-                                <input type="text" name="searchString" class="form-control me-2"
-                                       placeholder="Tìm kiếm theo mã SV, tên, email..."
-                                       value="@ViewBag.SearchString" />
-                               
-                                
-                            }
+                            <input type="text" name="maSV" class="form-control me-2"
+                                   placeholder="Nhập mã sinh viên (VD: SV001)"
+                                   value="@ViewBag.MaSV" />
                         </div>
-                        
                     </div>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
@@ -64,6 +58,14 @@
 
 @if (Model != null && Model.Any())
 {
+    <div class="alert alert-secondary mt-3">
+        <h5>
+            <i class="fas fa-user"></i>
+            Sinh viên: <strong>@ViewBag.TenSV</strong>
+            (<span class="text-primary">@ViewBag.MaSVHienThi</span>)
+        </h5>
+    </div>
+
     <div class="row mt-3">
         <div class="col-md-4">
             <div class="card">
@@ -120,44 +122,39 @@
                                 <td class="text-center">
                                     @if (item.DiemChuyenCan.HasValue)
                                     {
-                                        <span class="badge bg-success">@item.DiemChuyenCan.Value.ToString("0.0")</span>
+                                        <span class="badge bg-success">@item.DiemChuyenCan.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     @if (item.DiemGiuaKy.HasValue)
                                     {
-                                        <span class="badge bg-success">@item.DiemGiuaKy.Value.ToString("0.0")</span>
+                                        <span class="badge bg-success">@item.DiemGiuaKy.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     @if (item.DiemCuoiKy.HasValue)
                                     {
-                                        <span class="badge bg-success">@item.DiemCuoiKy.Value.ToString("0.0")</span>
+                                        <span class="badge bg-success">@item.DiemCuoiKy.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     @if (item.DiemTongKet.HasValue)
                                     {
                                         var dtk = item.DiemTongKet.Value;
-                                        var cssClass = dtk >= 8.5 ? "bg-success" : (dtk >= 7 ? "bg-info" : (dtk >= 5.5 ? "bg-warning" : (dtk >= 4 ? "bg-secondary" : "bg-danger")));
-                                        <span class="badge @cssClass">@dtk.ToString("0.00")</span>
+                                        var cssClass = dtk >= 8.5 ? "bg-success" :
+                                                      (dtk >= 7 ? "bg-info" :
+                                                      (dtk >= 5.5 ? "bg-warning text-dark" :
+                                                      (dtk >= 4 ? "bg-secondary" : "bg-danger")));
+                                        <span class="badge @cssClass">@dtk.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</span>
                                     }
                                     else
-                                    {
-                                        <span class="text-muted">-</span>
-                                    }
+                                    { <span class="text-muted">-</span>}
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-primary">@item.XepLoai</span>
@@ -173,6 +170,6 @@
 else
 {
     <div class="alert alert-info mt-3">
-        <i class="fas fa-info-circle"></i> Vui lòng chọn sinh viên để xem điểm
+        <i class="fas fa-info-circle"></i> Vui lòng nhập mã sinh viên để xem điểm
     </div>
 }

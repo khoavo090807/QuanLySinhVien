@@ -1,0 +1,92 @@
+﻿@model QuanLySinhVien.Models.LopHocPhan
+
+@{
+    ViewBag.Title = "Chỉnh sửa lớp học phần";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-edit"></i> Chỉnh Sửa Lớp Học Phần
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit"></i> Mã LHP: <strong>@Model.MaLHP</strong>
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("Edit", "LopHocPhan", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaLHP)
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaMH, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.DropDownListFor(model => model.MaMH,
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachMonHoc,
+                            new { @class = "form-select" })
+                        @Html.ValidationMessageFor(model => model.MaMH, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaHK, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.DropDownListFor(model => model.MaHK,
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachHocKy,
+                            new { @class = "form-select" })
+                        @Html.ValidationMessageFor(model => model.MaHK, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaGV, new { @class = "form-label" })
+                        @Html.DropDownListFor(model => model.MaGV,
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachGiangVien,
+                            new { @class = "form-select" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.PhongHoc, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.PhongHoc, new { @class = "form-control" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.SoLuongToiDa, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.SoLuongToiDa,
+                            new { @class = "form-control", type = "number", min = "1", max = "100" })
+                        @Html.ValidationMessageFor(model => model.SoLuongToiDa, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Cập Nhật
+                </button>
+            </div>
+        }
+    </div>
+</div>

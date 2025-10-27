@@ -1,0 +1,117 @@
+﻿@model IEnumerable<QuanLySinhVien.Models.HocKy>
+
+@{
+    ViewBag.Title = "Danh sách học kỳ";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-calendar-alt"></i> Quản lý Học kỳ
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list"></i> Danh sách học kỳ</span>
+        <a href="@Url.Action("Create")" class="btn btn-light btn-sm">
+            <i class="fas fa-plus"></i> Thêm học kỳ mới
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- Form tìm kiếm -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                @using (Html.BeginForm("Index", "HocKy", FormMethod.Get, new { @class = "d-flex" }))
+                {
+                    <input type="text" name="searchString" class="form-control me-2"
+                           placeholder="Tìm kiếm theo mã, tên, năm học..."
+                           value="@ViewBag.SearchString" />
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Tìm
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
+                        <i class="fas fa-redo"></i>
+                    </a>
+                }
+            </div>
+            <div class="col-md-6 text-end">
+                <span class="badge bg-info text-dark fs-6">
+                    Tổng số: @Model.Count() học kỳ
+                </span>
+            </div>
+        </div>
+
+        <!-- Bảng danh sách -->
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Mã HK</th>
+                        <th>Tên học kỳ</th>
+                        <th>Năm học</th>
+                        <th class="text-center">Ngày bắt đầu</th>
+                        <th class="text-center">Ngày kết thúc</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-center">Lớp HP</th>
+                        <th class="text-center">SV Đăng ký</th>
+                        <th class="text-center" width="150">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var trangThai = item.GetTrangThai();
+                            var cssClass = trangThai == "Đang mở" ? "success" : (trangThai == "Chưa bắt đầu" ? "warning" : "danger");
+
+                            <tr>
+                                <td><strong class="text-primary">@item.MaHK</strong></td>
+                                <td>@item.TenHK</td>
+                                <td><span class="badge bg-secondary">@item.NamHoc</span></td>
+                                <td class="text-center">@item.NgayBatDau.ToString("dd/MM/yyyy")</td>
+                                <td class="text-center">@item.NgayKetThuc.ToString("dd/MM/yyyy")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-@cssClass">@trangThai</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">@item.SoLopHocPhan</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success">@item.SoSinhVienDangKy</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="@Url.Action("Details", new { id = item.MaHK })"
+                                           class="btn btn-info" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", new { id = item.MaHK })"
+                                           class="btn btn-warning" title="Sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = item.MaHK })"
+                                           class="btn btn-danger" title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Không có dữ liệu học kỳ</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

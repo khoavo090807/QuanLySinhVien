@@ -1,0 +1,71 @@
+﻿@model QuanLySinhVien.Models.HocKy
+
+@{
+    ViewBag.Title = "Xóa học kỳ";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-trash-alt"></i> Xác nhận xóa học kỳ
+        </h2>
+    </div>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Cảnh báo xóa dữ liệu
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+            Không thể xóa học kỳ nếu vẫn còn lớp học phần!
+        </div>
+
+        <h4 class="mb-4">Thông tin học kỳ sẽ bị xóa:</h4>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <dl class="row">
+                    <dt class="col-sm-4">Mã học kỳ:</dt>
+                    <dd class="col-sm-8"><strong class="text-primary">@Model.MaHK</strong></dd>
+
+                    <dt class="col-sm-4">Tên học kỳ:</dt>
+                    <dd class="col-sm-8">@Model.TenHK</dd>
+
+                    <dt class="col-sm-4">Năm học:</dt>
+                    <dd class="col-sm-8"><span class="badge bg-secondary">@Model.NamHoc</span></dd>
+
+                    <dt class="col-sm-4">Ngày bắt đầu:</dt>
+                    <dd class="col-sm-8">@Model.NgayBatDau.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-4">Ngày kết thúc:</dt>
+                    <dd class="col-sm-8">@Model.NgayKetThuc.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-4">Lớp học phần:</dt>
+                    <dd class="col-sm-8"><span class="badge bg-info">@ViewBag.SoLopHocPhan</span></dd>
+
+                    <dt class="col-sm-4">SV Đăng ký:</dt>
+                    <dd class="col-sm-8"><span class="badge bg-success">@ViewBag.SoSinhVienDangKy</span></dd>
+                </dl>
+            </div>
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("Delete", "HocKy", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaHK)
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Hủy bỏ
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn xóa học kỳ này?');">
+                    <i class="fas fa-trash"></i> Xác nhận xóa
+                </button>
+            </div>
+        }
+    </div>
+</div>

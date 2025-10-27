@@ -1,0 +1,107 @@
+﻿@model QuanLySinhVien.Models.LopHocPhan
+
+@{
+    ViewBag.Title = "Thêm lớp học phần";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-plus-circle"></i> Thêm Lớp Học Phần Mới
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit"></i> Nhập thông tin lớp học phần
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("Create", "LopHocPhan", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaLHP, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.MaLHP, new { @class = "form-control", placeholder = "VD: LHP01" })
+                        @Html.ValidationMessageFor(model => model.MaLHP, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaMH, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.DropDownListFor(model => model.MaMH,
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachMonHoc,
+                            "-- Chọn môn học --",
+                            new { @class = "form-select" })
+                        @Html.ValidationMessageFor(model => model.MaMH, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaHK, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.DropDownListFor(model => model.MaHK,
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachHocKy,
+                            "-- Chọn học kỳ --",
+                            new { @class = "form-select" })
+                        @Html.ValidationMessageFor(model => model.MaHK, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaGV, new { @class = "form-label" })
+                        @Html.DropDownListFor(model => model.MaGV,
+                            (IEnumerable<SelectListItem>)ViewBag.DanhSachGiangVien,
+                            new { @class = "form-select" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.PhongHoc, new { @class = "form-label" })
+                        @Html.TextBoxFor(model => model.PhongHoc, new { @class = "form-control", placeholder = "VD: A101" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.SoLuongToiDa, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.SoLuongToiDa,
+                            new { @class = "form-control", type = "number", min = "1", max = "100", placeholder = "VD: 40" })
+                        @Html.ValidationMessageFor(model => model.SoLuongToiDa, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Lưu ý:</strong> Sĩ số tối đa sẽ quyết định xem lớp đã đầy hay chưa khi sinh viên đăng ký.
+            </div>
+
+            <hr />
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Lưu
+                </button>
+            </div>
+        }
+    </div>
+</div>

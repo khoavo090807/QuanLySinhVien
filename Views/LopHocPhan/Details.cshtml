@@ -1,0 +1,113 @@
+﻿@model QuanLySinhVien.Models.LopHocPhan
+
+@{
+    ViewBag.Title = "Chi tiết lớp học phần";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-info-circle"></i> Chi Tiết Lớp Học Phần
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-th-list"></i> @Model.MaLHP - @Model.TenMH
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Mã LHP:</dt>
+                    <dd class="col-sm-8"><strong>@Model.MaLHP</strong></dd>
+
+                    <dt class="col-sm-4">Môn Học:</dt>
+                    <dd class="col-sm-8">@Model.TenMH</dd>
+
+                    <dt class="col-sm-4">Học Kỳ:</dt>
+                    <dd class="col-sm-8"><span class="badge bg-secondary">@Model.TenHK</span></dd>
+
+                    <dt class="col-sm-4">Giáo Viên:</dt>
+                    <dd class="col-sm-8">@Model.TenGiangVien</dd>
+
+                    <dt class="col-sm-4">Phòng Học:</dt>
+                    <dd class="col-sm-8">@Model.PhongHoc</dd>
+
+                    <dt class="col-sm-4">Thời Gian:</dt>
+                    <dd class="col-sm-8">@Model.NgayBatDau.ToString("dd/MM/yyyy") - @Model.NgayKetThuc.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-4">Trạng Thái:</dt>
+                    <dd class="col-sm-8">
+                        @{
+                            var cssClass = Model.TrangThai == "Đang mở" ? "bg-success" :
+                                          (Model.TrangThai == "Chưa mở" ? "bg-warning" : "bg-danger");
+                        }
+                        <span class="badge @cssClass fs-6">@Model.TrangThai</span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="text-start mt-3">
+            <a href="@Url.Action("Edit", new { id = Model.MaLHP })" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Chỉnh Sửa
+            </a>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay Lại
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-chart-pie"></i> Sĩ Số
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <p class="mb-1">Đã Đăng Ký</p>
+                    <h2 class="text-primary">@Model.SoSinhVienDangKy</h2>
+                </div>
+                <hr />
+                <div class="mb-3">
+                    <p class="mb-1">Tối Đa</p>
+                    <h2 class="text-success">@Model.SoLuongToiDa</h2>
+                </div>
+                <hr />
+                <div>
+                    <p class="mb-1">Chỗ Còn Lại</p>
+                    <h2 class="text-warning">@ViewBag.SoChoConLai</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-percentage"></i> Tỷ Lệ Đầy
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2">
+                    <div class="progress-bar" role="progressbar" style="width: @ViewBag.TiLeDay%;" aria-valuenow="@ViewBag.TiLeDay" aria-valuemin="0" aria-valuemax="100">
+                        @ViewBag.TiLeDay%
+                    </div>
+                </div>
+                <p class="text-center mb-0">
+                    @if (Model.SoSinhVienDangKy >= Model.SoLuongToiDa)
+                    {
+                        <span class="badge bg-danger">ĐÃ ĐẦY</span>
+                    }
+                    else if (ViewBag.TiLeDay >= 80)
+                    {
+                        <span class="badge bg-warning">SẮP ĐẦY</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">CÒN CHỖ</span>
+                    }
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

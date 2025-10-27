@@ -1,0 +1,65 @@
+﻿@model QuanLySinhVien.Models.LopHocPhan
+
+@{
+    ViewBag.Title = "Xóa lớp học phần";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-trash-alt"></i> Xác Nhận Xóa
+        </h2>
+    </div>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle"></i> Cảnh báo
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong>
+            Không thể xóa nếu còn sinh viên đăng ký!
+        </div>
+
+        <h4 class="mb-4">Thông tin lớp học phần:</h4>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <dl class="row">
+                    <dt class="col-sm-4">Mã LHP:</dt>
+                    <dd class="col-sm-8"><strong class="text-primary">@Model.MaLHP</strong></dd>
+
+                    <dt class="col-sm-4">Môn Học:</dt>
+                    <dd class="col-sm-8">@Model.TenMH</dd>
+
+                    <dt class="col-sm-4">Học Kỳ:</dt>
+                    <dd class="col-sm-8"><span class="badge bg-secondary">@Model.TenHK</span></dd>
+
+                    <dt class="col-sm-4">Giáo Viên:</dt>
+                    <dd class="col-sm-8">@Model.TenGiangVien</dd>
+
+                    <dt class="col-sm-4">Sĩ Số:</dt>
+                    <dd class="col-sm-8"><span class="badge bg-info">@ViewBag.SoSinhVienDangKy sinh viên</span></dd>
+                </dl>
+            </div>
+        </div>
+
+        <hr />
+
+        @using (Html.BeginForm("Delete", "LopHocPhan", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(model => model.MaLHP)
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-arrow-left"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('Bạn có chắc chắn muốn xóa?');">
+                    <i class="fas fa-trash"></i> Xác Nhận Xóa
+                </button>
+            </div>
+        }
+    </div>
+</div>

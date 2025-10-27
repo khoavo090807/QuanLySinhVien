@@ -1,0 +1,96 @@
+﻿@model QuanLySinhVien.Models.HocKy
+
+@{
+    ViewBag.Title = "Thêm học kỳ mới";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-plus-circle"></i> Thêm học kỳ mới
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit"></i> Nhập thông tin học kỳ
+    </div>
+    <div class="card-body">
+        @using (Html.BeginForm("Create", "HocKy", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.MaHK, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.MaHK, new { @class = "form-control", placeholder = "Ví dụ: HK1-2425" })
+                        @Html.ValidationMessageFor(model => model.MaHK, "", new { @class = "text-danger" })
+                        <small class="text-muted">Format: HK[1-2]-YYYY (VD: HK1-2425)</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.TenHK, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.TenHK, new { @class = "form-control", placeholder = "Ví dụ: Học kỳ 1" })
+                        @Html.ValidationMessageFor(model => model.TenHK, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.NamHoc, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.NamHoc, new { @class = "form-control", placeholder = "Ví dụ: 2024-2025" })
+                        @Html.ValidationMessageFor(model => model.NamHoc, "", new { @class = "text-danger" })
+                        <small class="text-muted">Format: YYYY-YYYY (VD: 2024-2025)</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.NgayBatDau, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.NgayBatDau, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+                        @Html.ValidationMessageFor(model => model.NgayBatDau, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.NgayKetThuc, new { @class = "form-label" })
+                        <span class="text-danger">*</span>
+                        @Html.TextBoxFor(model => model.NgayKetThuc, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+                        @Html.ValidationMessageFor(model => model.NgayKetThuc, "", new { @class = "text-danger" })
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Lưu ý:</strong> Ngày kết thúc phải sau ngày bắt đầu. Khoảng thời gian này sẽ được dùng để
+                kiểm tra thời gian đăng ký học phần.
+            </div>
+
+            <hr />
+
+            <div class="text-end">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Lưu thông tin
+                </button>
+            </div>
+        }
+    </div>
+</div>

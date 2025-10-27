@@ -1,6 +1,8 @@
 ﻿<!-- ============================================
-     VIEWS/DIEM/NHAPDIEM.CSHTML
-     FIX LỖI: 'HtmlHelper<dynamic>' has no applicable method named 'Hidden'
+     VIEWS/DIEM/NHAPDIEM.CSHTML - FIXED
+     - Load tất cả môn (có/chưa có điểm)
+     - Tính điểm tự động
+     - Lưu được dữ liệu nhập vào
      ============================================ -->
 
 @{
@@ -31,9 +33,17 @@
     </div>
 }
 
+@if (TempData["InfoMessage"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fas fa-info-circle"></i> @TempData["InfoMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <!-- ========== BƯỚC 1: CHỌN SINH VIÊN ========== -->
 <div class="card">
-    <div class="card-header">
+    <div class="card-header bg-primary text-white">
         <i class="fas fa-search"></i> Bước 1: Chọn sinh viên
     </div>
     <div class="card-body">
@@ -46,6 +56,7 @@
                         <span class="input-group-text"><i class="fas fa-user-graduate"></i></span>
                         @Html.DropDownList("maSV",
                             (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
+                            "-- Chọn sinh viên --",
                             new { @class = "form-select" })
                     </div>
                 </div>
@@ -63,13 +74,12 @@
 @if (ViewBag.DanhSachMonHoc != null && ViewBag.DanhSachMonHoc.Count > 0)
 {
     <div class="card mt-3">
-        <div class="card-header">
+        <div class="card-header bg-success text-white">
             <i class="fas fa-pencil-alt"></i> Bước 2: Nhập điểm - Sinh viên: <strong>@ViewBag.MaSV</strong>
         </div>
         <div class="card-body">
             @using (Html.BeginForm("NhapDiem", "Diem", FormMethod.Post))
             {
-                <!-- INPUT ẨN: GỬI MÃ SINH VIÊN -->
                 <input type="hidden" name="maSV" value="@ViewBag.MaSV" />
 
                 <div class="alert alert-info">
@@ -79,28 +89,28 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-bordered table-striped" id="bangDiem">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 12%;">Mã LHP</th>
-                                <th style="width: 30%;">Tên môn học</th>
+                                <th style="width: 26%;">Tên môn học</th>
                                 <th style="width: 8%;" class="text-center">TC</th>
-                                <th style="width: 12%;" class="text-center">Điểm CC (10%)</th>
-                                <th style="width: 12%;" class="text-center">Điểm GK (30%)</th>
-                                <th style="width: 12%;" class="text-center">Điểm CK (60%)</th>
+                                <th style="width: 11%;" class="text-center">Điểm CC (10%)</th>
+                                <th style="width: 11%;" class="text-center">Điểm GK (30%)</th>
+                                <th style="width: 11%;" class="text-center">Điểm CK (60%)</th>
                                 <th style="width: 14%;" class="text-center">Tổng kết</th>
                             </tr>
                         </thead>
                         <tbody>
                             @{
                                 int index = 0;
-                                foreach (var mon in ViewBag.DanhSachMonHoc)
+                                foreach (QuanLySinhVien.Models.DiemThongKe mon in (List<QuanLySinhVien.Models.DiemThongKe>)ViewBag.DanhSachMonHoc)
                                 {
-                                    <tr>
+                                    <tr class="row-diem" data-index="@index" data-malph="@mon.MaLHP">
                                         <td><strong>@mon.MaLHP</strong></td>
                                         <td>@mon.TenMH</td>
                                         <td class="text-center">
-                                            <span class="badge bg-info">@(mon.SoTinChi != 0 ? mon.SoTinChi : 0)</span>
+                                            <span class="badge bg-info">@(mon.SoTinChi.GetValueOrDefault(0))</span>
                                         </td>
                                         <!-- ĐIỂM CHUYÊN CẦN -->
                                         <td>
@@ -108,9 +118,9 @@
                                                    step="0.1"
                                                    min="0"
                                                    max="10"
-                                                   class="form-control form-control-sm diem-cc"
+                                                   class="form-control form-control-sm diem-input diem-cc"
                                                    name="DiemChuyenCan_@mon.MaLHP"
-                                                   value="@(mon.DiemChuyenCan != null ? ((float)mon.DiemChuyenCan).ToString("0.0") : "")"
+                                                   value="@(mon.DiemChuyenCan.HasValue ? mon.DiemChuyenCan.Value.ToString("0.0") : "")"
                                                    placeholder="0.0" />
                                         </td>
                                         <!-- ĐIỂM GIỮA KỲ -->
@@ -119,9 +129,9 @@
                                                    step="0.1"
                                                    min="0"
                                                    max="10"
-                                                   class="form-control form-control-sm diem-gk"
+                                                   class="form-control form-control-sm diem-input diem-gk"
                                                    name="DiemGiuaKy_@mon.MaLHP"
-                                                   value="@(mon.DiemGiuaKy != null ? ((float)mon.DiemGiuaKy).ToString("0.0") : "")"
+                                                   value="@(mon.DiemGiuaKy.HasValue ? mon.DiemGiuaKy.Value.ToString("0.0") : "")"
                                                    placeholder="0.0" />
                                         </td>
                                         <!-- ĐIỂM CUỐI KỲ -->
@@ -130,18 +140,26 @@
                                                    step="0.1"
                                                    min="0"
                                                    max="10"
-                                                   class="form-control form-control-sm diem-ck"
+                                                   class="form-control form-control-sm diem-input diem-ck"
                                                    name="DiemCuoiKy_@mon.MaLHP"
-                                                   value="@(mon.DiemCuoiKy != null ? ((float)mon.DiemCuoiKy).ToString("0.0") : "")"
+                                                   value="@(mon.DiemCuoiKy.HasValue ? mon.DiemCuoiKy.Value.ToString("0.0") : "")"
                                                    placeholder="0.0" />
                                         </td>
-                                        <!-- ĐIỂM TỔNG KẾT (chỉ đọc) -->
+                                        <!-- ĐIỂM TỔNG KẾT (INPUT ẨN + HIỂN THỊ) -->
                                         <td>
-                                            <input type="text"
-                                                   class="form-control form-control-sm text-center diem-tk"
-                                                   readonly
-                                                   value="@(mon.DiemTongKet != null ? ((float)mon.DiemTongKet).ToString("0.00") : "-")"
-                                                   style="background-color: #f0f0f0; font-weight: bold;" />
+                                            <div class="input-group input-group-sm">
+                                                <input type="number"
+                                                       step="0.01"
+                                                       class="form-control diem-tk-display"
+                                                       value="@(mon.DiemTongKet.HasValue ? mon.DiemTongKet.Value.ToString("0.00") : "")"
+                                                       readonly
+                                                       style="background-color: #f0f0f0; font-weight: bold;" />
+                                                <!-- Input ẩn để submit -->
+                                                <input type="hidden"
+                                                       class="diem-tk-hidden"
+                                                       name="DiemTongKet_@mon.MaLHP"
+                                                       value="@(mon.DiemTongKet.HasValue ? mon.DiemTongKet.Value.ToString("0.00") : "")" />
+                                            </div>
                                         </td>
                                     </tr>
                                     index++;
@@ -157,48 +175,143 @@
                     <a href="@Url.Action("NhapDiem")" class="btn btn-secondary btn-lg">
                         <i class="fas fa-times"></i> Hủy
                     </a>
-                    <button type="submit" class="btn btn-success btn-lg">
+                    <button type="submit" class="btn btn-success btn-lg" id="btnLuu">
                         <i class="fas fa-save"></i> Lưu tất cả điểm
                     </button>
                 </div>
             }
         </div>
     </div>
-
-    <!-- JAVASCRIPT: TÍNH ĐIỂM TỔNG KẾT TỰ ĐỘNG -->
-    <script>
-        $(document).ready(function () {
-            // Hàm tính điểm tổng kết
-            function tinhDiemTongKet(row) {
-                var cc = parseFloat(row.find('.diem-cc').val()) || 0;
-                var gk = parseFloat(row.find('.diem-gk').val()) || 0;
-                var ck = parseFloat(row.find('.diem-ck').val()) || 0;
-
-                if (cc > 0 || gk > 0 || ck > 0) {
-                    var tk = (cc * 0.1) + (gk * 0.3) + (ck * 0.6);
-                    row.find('.diem-tk').val(tk.toFixed(2));
-                } else {
-                    row.find('.diem-tk').val('-');
-                }
-            }
-
-            // Khi nhập điểm -> tính tổng kết tự động
-            $('table tbody').on('change keyup', '.diem-cc, .diem-gk, .diem-ck', function () {
-                var row = $(this).closest('tr');
-                tinhDiemTongKet(row);
-            });
-
-            // Tính ngay lần đầu tiên khi load trang
-            $('table tbody tr').each(function () {
-                tinhDiemTongKet($(this));
-            });
-        });
-    </script>
+}
+else if (!string.IsNullOrEmpty(ViewBag.MaSV))
+{
+    <div class="alert alert-warning mt-3">
+        <i class="fas fa-info-circle"></i>
+        <strong>Thông báo:</strong> Sinh viên này chưa đăng ký môn học nào.
+    </div>
 }
 else
 {
     <div class="alert alert-info mt-3">
         <i class="fas fa-info-circle"></i>
-        <strong>Hướng dẫn:</strong> Chọn sinh viên từ Bước 1 để xem danh sách môn học cần nhập điểm
+        <strong>Hướng dẫn:</strong> Chọn sinh viên từ Bước 1 để xem danh sách môn học
     </div>
 }
+
+<script>
+    $(document).ready(function () {
+        // ✅ BƯỚC 1: Hàm tính điểm tổng kết
+        function tinhDiemTongKet(row) {
+            const cc = parseFloat(row.find('.diem-cc').val()) || 0;
+            const gk = parseFloat(row.find('.diem-gk').val()) || 0;
+            const ck = parseFloat(row.find('.diem-ck').val()) || 0;
+
+            // Tính toán
+            if (cc > 0 || gk > 0 || ck > 0) {
+                const tk = (cc * 0.1) + (gk * 0.3) + (ck * 0.6);
+                const tkRounded = tk.toFixed(2);
+
+                // Cập nhật display + hidden input
+                row.find('.diem-tk-display').val(tkRounded);
+                row.find('.diem-tk-hidden').val(tkRounded);
+            } else {
+                row.find('.diem-tk-display').val('');
+                row.find('.diem-tk-hidden').val('');
+            }
+        }
+
+        // ✅ BƯỚC 2: Khi nhập điểm bất kỳ → tính tổng kết
+        $('#bangDiem').on('input change', '.diem-input', function () {
+            const row = $(this).closest('tr.row-diem');
+            tinhDiemTongKet(row);
+        });
+
+        // ✅ BƯỚC 3: Tính lại toàn bộ khi load trang
+        $('#bangDiem tbody tr.row-diem').each(function () {
+            tinhDiemTongKet($(this));
+        });
+
+        // ✅ BƯỚC 4: Validation trước khi submit
+        $('#bangDiem').closest('form').on('submit', function (e) {
+            let coLoi = false;
+            let thongBao = '';
+
+            $('#bangDiem tbody tr.row-diem').each(function () {
+                const maLHP = $(this).data('malph');
+                const cc = $(this).find('.diem-cc').val();
+                const gk = $(this).find('.diem-gk').val();
+                const ck = $(this).find('.diem-ck').val();
+
+                // Nếu có nhập 1 điểm thì phải nhập đủ 3
+                const coNhap = cc || gk || ck;
+                const duBa = cc && gk && ck;
+
+                if (coNhap && !duBa) {
+                    coLoi = true;
+                    thongBao += '• Môn ' + maLHP + ': Vui lòng nhập đủ 3 điểm\n';
+                }
+
+                // Kiểm tra giá trị hợp lệ (0-10)
+                if (cc && (cc < 0 || cc > 10)) {
+                    coLoi = true;
+                    thongBao += '• Môn ' + maLHP + ': Điểm CC phải từ 0-10\n';
+                }
+                if (gk && (gk < 0 || gk > 10)) {
+                    coLoi = true;
+                    thongBao += '• Môn ' + maLHP + ': Điểm GK phải từ 0-10\n';
+                }
+                if (ck && (ck < 0 || ck > 10)) {
+                    coLoi = true;
+                    thongBao += '• Môn ' + maLHP + ': Điểm CK phải từ 0-10\n';
+                }
+            });
+
+            if (coLoi) {
+                alert('❌ Lỗi nhập điểm:\n\n' + thongBao);
+                e.preventDefault();
+                return false;
+            }
+
+            // Confirm trước khi lưu
+            if (!confirm('✅ Bạn chắc chắn muốn lưu điểm?')) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Disable button để tránh submit nhiều lần
+            $('#btnLuu').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang lưu...');
+        });
+    });
+</script>
+
+<style>
+    .table-bordered td {
+        vertical-align: middle;
+        padding: 8px;
+    }
+
+    .form-control-sm {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    .diem-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .diem-tk-display {
+        background-color: #f0f0f0 !important;
+        font-weight: bold;
+        cursor: not-allowed;
+    }
+
+    table tbody tr:hover {
+        background-color: #f5f5f5;
+        transition: background-color 0.2s;
+    }
+
+    #bangDiem input[readonly] {
+        color: #333;
+    }
+</style>

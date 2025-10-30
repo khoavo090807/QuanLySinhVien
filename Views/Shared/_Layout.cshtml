@@ -200,12 +200,14 @@
                     <a class="nav-link" href="@Url.Action("BangDiemLop", "Diem")">
                         <i class="fas fa-table"></i> Bảng Điểm
                     </a>
-                    <a class="nav-link" href="@Url.Action("NhapDiem", "Diem")">
-                        <i class="fas fa-pencil-alt"></i> Nhập Điểm
-                    </a>
 
+                    @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                    {
+                        <a class="nav-link" href="@Url.Action("NhapDiem", "Diem")">
+                            <i class="fas fa-pencil-alt"></i> Nhập Điểm
+                        </a>
 
-
+                    }
 
 
                 </nav>

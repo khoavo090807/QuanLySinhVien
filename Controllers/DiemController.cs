@@ -11,10 +11,9 @@ namespace QuanLySinhVien.Controllers
     public class DiemController : Controller
     {
         private DatabaseHelper db = new DatabaseHelper();
-
-        // ============================================
-        // HELPER: Parse float từ Database
-        // ============================================
+        
+        
+     
         private float? ParseDbFloat(object dbValue)
         {
             if (dbValue == null || dbValue == DBNull.Value) return null;
@@ -46,9 +45,11 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         // GET: Diem/NhapDiem - Load CHỈ những môn CHƯA có điểm tổng kết
         // ============================================
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public ActionResult NhapDiem(string maSV = null)
         {
+            
             LoadDanhSachSinhVien();
             ViewBag.MaSV = maSV;
 
@@ -117,10 +118,12 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         // POST: Diem/NhapDiem - Lưu tất cả điểm
         // ============================================
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult NhapDiem(string maSV, FormCollection form)
         {
+            
             try
             {
                 if (string.IsNullOrEmpty(maSV))

@@ -1523,6 +1523,9 @@ VALUES
 ('200120396', '2001230396', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin@huit.edu.vn', 'Admin', 1, GETDATE());
 INSERT INTO Account (MaTaiKhoan, TenDangNhap, MatKhau, Email, LoaiTaiKhoan, TrangThai, NgayTao)
 VALUES 
+('2001130001', '2001130001', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'khoavo090807@gmail.com', 'Student', 1, GETDATE());
+INSERT INTO Account (MaTaiKhoan, TenDangNhap, MatKhau, Email, LoaiTaiKhoan, TrangThai, NgayTao)
+VALUES 
 (N'ACC001', N'admin', N'8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', N'admin@huit.edu.vn', N'Admin', 1, GETDATE()),
 (N'ACC002', N'baotv', N'5e884898da28047151d0e56f8dc62927593d815b266dd1c23d936a6b151f4f2a', N'baotv@huit.edu.vn', N'Lecturer', 1, GETDATE()),
 (N'ACC003', N'annv', N'5e884898da28047151d0e56f8dc62927593d815b266dd1c23d936a6b151f4f2a', N'annv@huit.edu.vn', N'Student', 1, GETDATE());

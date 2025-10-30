@@ -11,7 +11,7 @@ namespace QuanLySinhVien.Models
 
         public DatabaseHelper()
         {
-            connectionString = ConfigurationManager.ConnectionStrings["QLSV_DoAn"].ConnectionString;
+            connectionString = ConfigurationManager.ConnectionStrings["QLSV_DoAn_2"].ConnectionString;
         }
 
         // Phương thức thực thi câu lệnh SELECT và trả về DataTable

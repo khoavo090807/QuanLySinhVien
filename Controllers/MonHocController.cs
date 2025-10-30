@@ -91,33 +91,16 @@ namespace QuanLySinhVien.Controllers
             {
                 try
                 {
-                    // 1. Insert môn học chính
-                    string query = @"INSERT INTO MonHoc (MaMH, TenMH, SoTinChi)
-                                   VALUES (@MaMH, @TenMH, @SoTinChi)";
-
+                    // Sử dụng stored procedure sp_ThemMonHoc
                     SqlParameter[] parameters = new SqlParameter[]
                     {
                         new SqlParameter("@MaMH", monHoc.MaMH),
                         new SqlParameter("@TenMH", monHoc.TenMH),
-                        new SqlParameter("@SoTinChi", monHoc.SoTinChi)
+                        new SqlParameter("@SoTinChi", monHoc.SoTinChi),
+                        new SqlParameter("@MaMHTienQuyet", string.IsNullOrEmpty(MaMHTienQuyet) ? (object)DBNull.Value : MaMHTienQuyet)
                     };
 
-                    db.ExecuteNonQuery(query, parameters);
-
-                    // 2. Insert môn học tiên quyết nếu có chọn
-                    if (!string.IsNullOrEmpty(MaMHTienQuyet))
-                    {
-                        string prereqQuery = @"INSERT INTO MonHoc_TienQuyet (MaMH, MaMHTienQuyet)
-                                            VALUES (@MaMH, @MHTienQuyet)";
-
-                        SqlParameter[] prereqParams = new SqlParameter[]
-                        {
-                            new SqlParameter("@MaMH", monHoc.MaMH),
-                            new SqlParameter("@MHTienQuyet", MaMHTienQuyet)
-                        };
-
-                        db.ExecuteNonQuery(prereqQuery, prereqParams);
-                    }
+                    db.ExecuteStoredProcedureNonQuery("sp_ThemMonHoc", parameters);
 
                     // 3. Nếu có học kỳ và thời gian, có thể tạo LopHocPhan nếu cần
                     if (HocKy.HasValue && ThoiGianBatDau.HasValue)
@@ -151,12 +134,80 @@ namespace QuanLySinhVien.Controllers
                     TempData["SuccessMessage"] = "Thêm môn học thành công!";
                     return RedirectToAction("Index");
                 }
+                catch (SqlException ex)
+                {
+                    if (ex.Number == 2812)
+                    {
+                        ModelState.AddModelError("", "Lỗi: Stored procedure 'sp_ThemMonHoc' chưa được tạo trong database.");
+                    }
+                    else if (ex.Number == 50000)
+                    {
+                        ModelState.AddModelError("", ex.Message);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Lỗi SQL: " + ex.Message);
+                    }
+                }
                 catch (Exception ex)
                 {
                     ModelState.AddModelError("", "Lỗi: " + ex.Message);
                 }
             }
 
+            return View(monHoc);
+        }
+
+        // GET: MonHoc/Details/5
+        public ActionResult Details(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return HttpNotFound();
+            }
+
+            string query = "SELECT * FROM MonHoc WHERE MaMH = @MaMH";
+            SqlParameter[] parameters = new SqlParameter[]
+            {
+                new SqlParameter("@MaMH", id)
+            };
+
+            DataTable dt = db.ExecuteQuery(query, parameters);
+
+            if (dt.Rows.Count == 0)
+            {
+                return HttpNotFound();
+            }
+
+            DataRow row = dt.Rows[0];
+            MonHoc monHoc = new MonHoc
+            {
+                MaMH = row["MaMH"].ToString(),
+                TenMH = row["TenMH"].ToString(),
+                SoTinChi = Convert.ToInt32(row["SoTinChi"])
+            };
+
+            // Sử dụng function fn_LayDanhSachMonTienQuyet để lấy danh sách tiên quyết
+            string prereqQuery = "SELECT * FROM dbo.fn_LayDanhSachMonTienQuyet(@MaMH)";
+            SqlParameter[] prereqParams = new SqlParameter[]
+            {
+                new SqlParameter("@MaMH", id)
+            };
+
+            DataTable prereqDt = db.ExecuteQuery(prereqQuery, prereqParams);
+            List<MonHoc> danhSachTienQuyet = new List<MonHoc>();
+
+            foreach (DataRow prereqRow in prereqDt.Rows)
+            {
+                danhSachTienQuyet.Add(new MonHoc
+                {
+                    MaMH = prereqRow["MaMH"].ToString(),
+                    TenMH = prereqRow["TenMH"].ToString(),
+                    SoTinChi = Convert.ToInt32(prereqRow["SoTinChi"])
+                });
+            }
+
+            ViewBag.DanhSachTienQuyet = danhSachTienQuyet;
             return View(monHoc);
         }
 
@@ -201,11 +252,7 @@ namespace QuanLySinhVien.Controllers
             {
                 try
                 {
-                    string query = @"UPDATE MonHoc 
-                                   SET TenMH = @TenMH, 
-                                       SoTinChi = @SoTinChi
-                                   WHERE MaMH = @MaMH";
-
+                    // Sử dụng stored procedure sp_CapNhatMonHoc
                     SqlParameter[] parameters = new SqlParameter[]
                     {
                         new SqlParameter("@MaMH", monHoc.MaMH),
@@ -213,12 +260,24 @@ namespace QuanLySinhVien.Controllers
                         new SqlParameter("@SoTinChi", monHoc.SoTinChi)
                     };
 
-                    int result = db.ExecuteNonQuery(query, parameters);
+                    db.ExecuteStoredProcedureNonQuery("sp_CapNhatMonHoc", parameters);
 
-                    if (result > 0)
+                    TempData["SuccessMessage"] = "Cập nhật môn học thành công!";
+                    return RedirectToAction("Index");
+                }
+                catch (SqlException ex)
+                {
+                    if (ex.Number == 2812)
                     {
-                        TempData["SuccessMessage"] = "Cập nhật môn học thành công!";
-                        return RedirectToAction("Index");
+                        ModelState.AddModelError("", "Lỗi: Stored procedure 'sp_CapNhatMonHoc' chưa được tạo trong database.");
+                    }
+                    else if (ex.Number == 50000)
+                    {
+                        ModelState.AddModelError("", ex.Message);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "Lỗi SQL: " + ex.Message);
                     }
                 }
                 catch (Exception ex)

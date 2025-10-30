@@ -112,91 +112,7 @@ namespace QuanLySinhVien.Controllers
         {
             try
             {
-                // ✅ 1. Kiểm tra sinh viên có tồn tại không
-                string checkSVQuery = "SELECT COUNT(*) FROM SinhVien WHERE MaSV = @MaSV";
-                SqlParameter[] checkSVParams = new SqlParameter[] { new SqlParameter("@MaSV", MaSV) };
-                int svCount = Convert.ToInt32(db.ExecuteScalar(checkSVQuery, checkSVParams));
-
-                if (svCount == 0)
-                {
-                    TempData["ErrorMessage"] = $"Lỗi: Sinh viên [{MaSV}] không tồn tại!";
-                    LoadDanhSachSinhVien();
-                    LoadDanhSachLopHocPhan();
-                    return View();
-                }
-
-                // ✅ 2. Kiểm tra lớp học phần tồn tại
-                string checkLHPQuery = "SELECT COUNT(*) FROM LopHocPhan WHERE MaLHP = @MaLHP";
-                SqlParameter[] checkLHPParams = new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) };
-                int lhpCount = Convert.ToInt32(db.ExecuteScalar(checkLHPQuery, checkLHPParams));
-
-                if (lhpCount == 0)
-                {
-                    TempData["ErrorMessage"] = $"Lỗi: Mã lớp học phần [{MaLHP}] không tồn tại!";
-                    LoadDanhSachSinhVien();
-                    LoadDanhSachLopHocPhan();
-                    return View();
-                }
-
-                // ✅ 3. Kiểm tra sinh viên đã đăng ký lớp này chưa
-                string checkDupQuery = "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
-                SqlParameter[] checkDupParams = new SqlParameter[]
-                {
-                    new SqlParameter("@MaSV", MaSV),
-                    new SqlParameter("@MaLHP", MaLHP)
-                };
-                int dupCount = Convert.ToInt32(db.ExecuteScalar(checkDupQuery, checkDupParams));
-
-                if (dupCount > 0)
-                {
-                    TempData["ErrorMessage"] = $"Lỗi: Sinh viên [{MaSV}] đã đăng ký lớp [{MaLHP}] này rồi!";
-                    LoadDanhSachSinhVien();
-                    LoadDanhSachLopHocPhan();
-                    return View();
-                }
-
-                // ✅ 4. Kiểm tra thời gian đăng ký (Học kỳ có đang mở không)
-                string dateCheckQuery = @"
-                    SELECT
-                        CASE
-                            WHEN GETDATE() < hk.NgayBatDau THEN 0
-                            WHEN GETDATE() > hk.NgayKetThuc THEN 1
-                            ELSE 2
-                        END AS TrangThai,
-                        hk.NgayBatDau,
-                        hk.NgayKetThuc,
-                        hk.TenHK
-                    FROM LopHocPhan lhp
-                    INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
-                    WHERE lhp.MaLHP = @MaLHP";
-                SqlParameter[] dateCheckParams = new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) };
-
-                DataTable dateDt = db.ExecuteQuery(dateCheckQuery, dateCheckParams);
-                if (dateDt.Rows.Count > 0)
-                {
-                    DataRow dateRow = dateDt.Rows[0];
-                    int trangThai = Convert.ToInt32(dateRow["TrangThai"]);
-                    string tenHK = dateRow["TenHK"].ToString();
-                    DateTime ngayBatDau = Convert.ToDateTime(dateRow["NgayBatDau"]);
-                    DateTime ngayKetThuc = Convert.ToDateTime(dateRow["NgayKetThuc"]);
-
-                    if (trangThai == 0)
-                    {
-                        TempData["ErrorMessage"] = $"Lỗi: Học kỳ [{tenHK}] chưa bắt đầu. Thời gian đăng ký: từ {ngayBatDau:dd/MM/yyyy} đến {ngayKetThuc:dd/MM/yyyy}.";
-                        LoadDanhSachSinhVien();
-                        LoadDanhSachLopHocPhan();
-                        return View();
-                    }
-                    else if (trangThai == 1)
-                    {
-                        TempData["ErrorMessage"] = $"Lỗi: Học kỳ [{tenHK}] đã kết thúc. Thời gian đăng ký: từ {ngayBatDau:dd/MM/yyyy} đến {ngayKetThuc:dd/MM/yyyy}.";
-                        LoadDanhSachSinhVien();
-                        LoadDanhSachLopHocPhan();
-                        return View();
-                    }
-                }
-
-                // ✅ 5. Kiểm tra sĩ số lớp chưa đầy
+                // Kiểm tra sĩ số lớp chưa đầy (kiểm tra trước khi gọi SP)
                 string checkSiSoQuery = @"
                     SELECT 
                         lhp.SoLuongToiDa,
@@ -221,66 +137,54 @@ namespace QuanLySinhVien.Controllers
                     }
                 }
 
-                // ✅ 6. Kiểm tra tiên quyết (nếu có)
-                string getMHQuery = "SELECT MaMH FROM LopHocPhan WHERE MaLHP = @MaLHP";
-                SqlParameter[] getMHParams = new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) };
-                object maMHObj = db.ExecuteScalar(getMHQuery, getMHParams);
-
-                if (maMHObj != null)
-                {
-                    string maMH = maMHObj.ToString();
-
-                    // Gọi hàm kiểm tra tiên quyết
-                    string prereqQuery = "SELECT dbo.fn_KiemTraTienQuyet(@MaSV, @MaMH)";
-                    SqlParameter[] prereqParams = new SqlParameter[]
-                    {
-                        new SqlParameter("@MaSV", MaSV),
-                        new SqlParameter("@MaMH", maMH)
-                    };
-
-                    try
-                    {
-                        int prereqResult = Convert.ToInt32(db.ExecuteScalar(prereqQuery, prereqParams));
-
-                        if (prereqResult == 0)
-                        {
-                            TempData["ErrorMessage"] = $"Lỗi: Sinh viên [{MaSV}] không đủ điều kiện tiên quyết để đăng ký môn [{maMH}]!";
-                            LoadDanhSachSinhVien();
-                            LoadDanhSachLopHocPhan();
-                            return View();
-                        }
-                    }
-                    catch (Exception exPrereq)
-                    {
-                        // Nếu hàm không tồn tại, bỏ qua kiểm tra tiên quyết
-                        TempData["ErrorMessage"] = $"Cảnh báo: Không thể kiểm tra tiên quyết. {exPrereq.Message}";
-                    }
-                }
-
-                // ✅ 7. ĐĂNG KÝ THÀNH CÔNG - Thêm vào database
-                string insertQuery = @"INSERT INTO DangKyHocPhan (MaSV, MaLHP, NgayDangKy)
-                                       VALUES (@MaSV, @MaLHP, GETDATE())";
-                SqlParameter[] insertParams = new SqlParameter[]
+                // Sử dụng stored procedure sp_DangKyMonHoc
+                // SP sẽ tự động kiểm tra: sinh viên tồn tại, lớp tồn tại, trùng đăng ký, tiên quyết
+                SqlParameter[] parameters = new SqlParameter[]
                 {
                     new SqlParameter("@MaSV", MaSV),
                     new SqlParameter("@MaLHP", MaLHP)
                 };
 
-                int result = db.ExecuteNonQuery(insertQuery, insertParams);
+                db.ExecuteStoredProcedureNonQuery("sp_DangKyHocPhan", parameters);
 
-                if (result > 0)
+                // Kiểm tra xem đăng ký có thành công không
+                string checkQuery = "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
+                SqlParameter[] checkParams = new SqlParameter[]
+                {
+                    new SqlParameter("@MaSV", MaSV),
+                    new SqlParameter("@MaLHP", MaLHP)
+                };
+                int registered = Convert.ToInt32(db.ExecuteScalar(checkQuery, checkParams));
+
+                if (registered > 0)
                 {
                     TempData["SuccessMessage"] = "Đăng ký học phần thành công!";
                     return RedirectToAction("Index", new { maSV = MaSV });
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Lỗi: Không thể đăng ký. Vui lòng thử lại!";
+                    TempData["ErrorMessage"] = "Lỗi: Không thể đăng ký. Vui lòng kiểm tra lại điều kiện.";
                 }
             }
             catch (SqlException ex)
             {
-                TempData["ErrorMessage"] = $"Lỗi SQL Server: {ex.Message}";
+                if (ex.Number == 2812)
+                {
+                    TempData["ErrorMessage"] = "Lỗi: Stored procedure 'sp_DangKyMonHoc' chưa được tạo trong database.";
+                }
+                else if (ex.Number == 50000 || ex.Message.Contains("LỖI:"))
+                {
+                    // Lỗi từ stored procedure
+                    TempData["ErrorMessage"] = ex.Message.Replace("LỖI:", "").Trim();
+                }
+                else if (ex.Message.Contains("trg_KiemTraNgayDangKy"))
+                {
+                    TempData["ErrorMessage"] = "Lỗi: Đã hết hạn đăng ký hoặc học kỳ chưa bắt đầu.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = $"Lỗi SQL Server: {ex.Message}";
+                }
             }
             catch (Exception ex)
             {

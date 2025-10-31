@@ -46,7 +46,7 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         // GET: DangKyHocPhan - Xem danh sách đã đăng ký
         // ============================================
-        public ActionResult Index(string maSV)
+        public ActionResult Index(string MaSV)
         {
             List<DangKyHocPhan> danhSach = new List<DangKyHocPhan>();
 
@@ -62,10 +62,10 @@ namespace QuanLySinhVien.Controllers
                             WHERE 1=1";
 
             List<SqlParameter> parameters = new List<SqlParameter>();
-            if (!string.IsNullOrEmpty(maSV))
+            if (!string.IsNullOrEmpty(MaSV))
             {
                 query += " AND dk.MaSV = @MaSV";
-                parameters.Add(new SqlParameter("@MaSV", maSV));
+                parameters.Add(new SqlParameter("@MaSV", MaSV));
             }
             query += " ORDER BY dk.NgayDangKy DESC";
 
@@ -88,7 +88,7 @@ namespace QuanLySinhVien.Controllers
                 danhSach.Add(dk);
             }
 
-            ViewBag.MaSV = maSV;
+            ViewBag.MaSV = MaSV;
             ViewBag.TotalCount = danhSach.Count;
             return View(danhSach);
         }
@@ -145,7 +145,7 @@ namespace QuanLySinhVien.Controllers
                     new SqlParameter("@MaLHP", MaLHP)
                 };
 
-                db.ExecuteStoredProcedureNonQuery("sp_DangKyHocPhan", parameters);
+                db.ExecuteStoredProcedureNonQuery("sp_DangKyMonHoc", parameters);
 
                 // Kiểm tra xem đăng ký có thành công không
                 string checkQuery = "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
@@ -159,7 +159,7 @@ namespace QuanLySinhVien.Controllers
                 if (registered > 0)
                 {
                     TempData["SuccessMessage"] = "Đăng ký học phần thành công!";
-                    return RedirectToAction("Index", new { maSV = MaSV });
+                    return RedirectToAction("Index", new { MaSV = MaSV });
                 }
                 else
                 {
@@ -199,9 +199,9 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         // GET: DangKyHocPhan/Edit - Form nhập điểm
         // ============================================
-        public ActionResult Edit(string maSV, string maLHP)
+        public ActionResult Edit(string MaSV, string maLHP)
         {
-            if (string.IsNullOrEmpty(maSV) || string.IsNullOrEmpty(maLHP))
+            if (string.IsNullOrEmpty(MaSV) || string.IsNullOrEmpty(maLHP))
                 return HttpNotFound();
 
             string query = @"SELECT 
@@ -213,7 +213,7 @@ namespace QuanLySinhVien.Controllers
                             WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
 
             SqlParameter[] parameters = {
-                new SqlParameter("@MaSV", maSV),
+                new SqlParameter("@MaSV", MaSV),
                 new SqlParameter("@MaLHP", maLHP)
             };
 
@@ -280,16 +280,16 @@ namespace QuanLySinhVien.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
-                return RedirectToAction("Edit", new { maSV = MaSV, maLHP = MaLHP });
+                return RedirectToAction("Edit", new { MaSV = MaSV, maLHP = MaLHP });
             }
         }
 
         // ============================================
         // GET: DangKyHocPhan/Delete - Xác nhận xóa
         // ============================================
-        public ActionResult Delete(string maSV, string maLHP)
+        public ActionResult Delete(string MaSV, string maLHP)
         {
-            if (string.IsNullOrEmpty(maSV) || string.IsNullOrEmpty(maLHP))
+            if (string.IsNullOrEmpty(MaSV) || string.IsNullOrEmpty(maLHP))
                 return HttpNotFound();
 
             string query = @"SELECT 
@@ -302,7 +302,7 @@ namespace QuanLySinhVien.Controllers
                             WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
 
             SqlParameter[] parameters = {
-                new SqlParameter("@MaSV", maSV),
+                new SqlParameter("@MaSV", MaSV),
                 new SqlParameter("@MaLHP", maLHP)
             };
 
@@ -328,13 +328,13 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public ActionResult DeleteConfirmed(string maSV, string maLHP)
+        public ActionResult DeleteConfirmed(string MaSV, string maLHP)
         {
             try
             {
                 string query = "DELETE FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
                 SqlParameter[] parameters = {
-                    new SqlParameter("@MaSV", maSV),
+                    new SqlParameter("@MaSV", MaSV),
                     new SqlParameter("@MaLHP", maLHP)
                 };
                 int result = db.ExecuteNonQuery(query, parameters);

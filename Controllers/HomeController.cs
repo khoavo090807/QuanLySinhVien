@@ -32,7 +32,8 @@ namespace QuanLySinhVien.Controllers
 
             return View();
         }
-
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
         // GET: ThongKeHocKy
         public ActionResult ThongKeHocKy(string maHK)
         {

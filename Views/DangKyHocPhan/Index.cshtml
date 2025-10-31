@@ -24,7 +24,7 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <form method="get" action="@Url.Action("Index")" class="d-flex">
-                    <input type="text" name="maSV" class="form-control me-2"
+                    <input type="text" name="MaSV" class="form-control me-2"
                            placeholder="Nhập mã sinh viên để lọc..."
                            value="@ViewBag.MaSV" />
                     <button type="submit" class="btn btn-primary">
@@ -121,11 +121,11 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a href="@Url.Action("Edit", new { maSV = item.MaSV, maLHP = item.MaLHP })"
+                                        <a href="@Url.Action("Edit", new { MaSV = item.MaSV, maLHP = item.MaLHP })"
                                            class="btn btn-warning" title="Nhập điểm">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="@Url.Action("Delete", new { maSV = item.MaSV, maLHP = item.MaLHP })"
+                                        <a href="@Url.Action("Delete", new { MaSV = item.MaSV, maLHP = item.MaLHP })"
                                            class="btn btn-danger" title="Hủy đăng ký">
                                             <i class="fas fa-trash"></i>
                                         </a>

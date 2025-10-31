@@ -11,9 +11,7 @@ namespace QuanLySinhVien.Controllers
     public class DiemController : Controller
     {
         private DatabaseHelper db = new DatabaseHelper();
-        
-        
-     
+
         private float? ParseDbFloat(object dbValue)
         {
             if (dbValue == null || dbValue == DBNull.Value) return null;
@@ -43,13 +41,161 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // GET: Diem/NhapDiem - Load CHỈ những môn CHƯA có điểm tổng kết
+        // HELPER: Lấy MaSV từ tài khoản đăng nhập (join với SinhVien)
+        // ============================================
+        private string GetCurrentUserMaSV()
+        {
+            if (!Request.IsAuthenticated || string.IsNullOrEmpty(User.Identity.Name))
+                return null;
+
+            string query = @"
+                SELECT sv.MaSV
+                FROM Account a
+                INNER JOIN SinhVien sv ON a.MaTaiKhoan = sv.MaSV
+                WHERE a.TenDangNhap = @TenDangNhap";
+
+            SqlParameter[] parameters = new SqlParameter[]
+            {
+                new SqlParameter("@TenDangNhap", User.Identity.Name)
+            };
+
+            DataTable dt = db.ExecuteQuery(query, parameters);
+            return dt.Rows.Count > 0 ? dt.Rows[0]["MaSV"].ToString() : null;
+        }
+
+        // ============================================
+        // GET: Diem/XemDiem - Sinh viên xem điểm của mình, Admin lọc sinh viên
+        // ============================================
+        [Authorize]
+        [HttpGet]
+        public ActionResult XemDiem(string maSV = null)
+        {
+            List<DiemThongKe> danhSach = new List<DiemThongKe>();
+
+            // Xác định maSV dựa trên vai trò
+            if (User.IsInRole("Admin"))
+            {
+                // Admin có thể lọc mã sinh viên
+                if (!string.IsNullOrEmpty(Request.QueryString["maSV"]))
+                {
+                    maSV = Request.QueryString["maSV"];
+                    LoadDanhSachSinhVien(); // Load danh sách để Admin chọn
+                    ViewBag.MaSV = maSV;
+                }
+                else
+                {
+                    // Nếu Admin không chọn maSV, để trống để hiển thị form lọc
+                    LoadDanhSachSinhVien();
+                    ViewBag.MaSV = null;
+                    return View(danhSach);
+                }
+            }
+            else
+            {
+                // Sinh viên (non-Admin) chỉ xem điểm của mình, không cho lọc
+                maSV = GetCurrentUserMaSV();
+                if (string.IsNullOrEmpty(maSV))
+                {
+                    TempData["ErrorMessage"] = "Không thể xác định thông tin sinh viên của bạn.";
+                    return RedirectToAction("Index", "Home");
+                }
+                ViewBag.MaSV = maSV; // Gán maSV cố định
+            }
+
+            string query = @"
+                SELECT 
+                    dk.MaSV,
+                    sv.HoTenSV,
+                    dk.MaLHP,
+                    mh.TenMH,
+                    mh.SoTinChi,
+                    dk.DiemChuyenCan,
+                    dk.DiemGiuaKy,
+                    dk.DiemCuoiKy,
+                    dk.DiemTongKet,
+                    CASE 
+                        WHEN dk.DiemTongKet IS NULL THEN 'Chưa có'
+                        WHEN dk.DiemTongKet >= 8.5 THEN 'Giỏi'
+                        WHEN dk.DiemTongKet >= 7.0 THEN 'Khá'
+                        WHEN dk.DiemTongKet >= 5.5 THEN 'Trung bình'
+                        WHEN dk.DiemTongKet >= 4.0 THEN 'Yếu'
+                        ELSE 'Kém'
+                    END AS XepLoai
+                FROM DangKyHocPhan dk
+                INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
+                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
+                WHERE dk.MaSV = @MaSV
+                ORDER BY mh.TenMH";
+
+            SqlParameter[] parameters = new SqlParameter[]
+            {
+                new SqlParameter("@MaSV", maSV)
+            };
+
+            try
+            {
+                DataTable dt = db.ExecuteQuery(query, parameters);
+
+                if (dt.Rows.Count > 0)
+                {
+                    ViewBag.TenSV = dt.Rows[0]["HoTenSV"].ToString();
+                    ViewBag.MaSVHienThi = maSV;
+
+                    float tongDiem = 0;
+                    int soMonCoTK = 0;
+                    int tongTinChi = 0;
+
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        float? diemTK = ParseDbFloat(row["DiemTongKet"]);
+                        int tinChi = row["SoTinChi"] == DBNull.Value ? 0 : Convert.ToInt32(row["SoTinChi"]);
+
+                        if (diemTK.HasValue)
+                        {
+                            tongDiem += diemTK.Value;
+                            soMonCoTK++;
+                            tongTinChi += tinChi;
+                        }
+
+                        danhSach.Add(new DiemThongKe
+                        {
+                            MaSV = row["MaSV"].ToString(),
+                            HoTenSV = row["HoTenSV"].ToString(),
+                            MaLHP = row["MaLHP"].ToString(),
+                            TenMH = row["TenMH"].ToString(),
+                            SoTinChi = tinChi,
+                            DiemChuyenCan = ParseDbFloat(row["DiemChuyenCan"]),
+                            DiemGiuaKy = ParseDbFloat(row["DiemGiuaKy"]),
+                            DiemCuoiKy = ParseDbFloat(row["DiemCuoiKy"]),
+                            DiemTongKet = diemTK,
+                            XepLoai = row["XepLoai"].ToString()
+                        });
+                    }
+
+                    ViewBag.DiemTrungBinh = soMonCoTK > 0 ? (tongDiem / soMonCoTK).ToString("0.00") : "Chưa có";
+                    ViewBag.TongTinChi = tongTinChi;
+                }
+                else
+                {
+                    TempData["InfoMessage"] = $"Sinh viên [{maSV}] chưa đăng ký môn học nào.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
+            }
+
+            return View(danhSach);
+        }
+
+        // ============================================
+        // GET: Diem/NhapDiem - Load CHỈ những môn CHƯA có điểm tổng kết (Chỉ Admin)
         // ============================================
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public ActionResult NhapDiem(string maSV = null)
         {
-            
             LoadDanhSachSinhVien();
             ViewBag.MaSV = maSV;
 
@@ -57,7 +203,6 @@ namespace QuanLySinhVien.Controllers
 
             if (!string.IsNullOrEmpty(maSV))
             {
-                // ✅ QUAN TRỌNG: Chỉ load những môn CHƯA có DiemTongKet (DiemTongKet IS NULL)
                 string query = @"
                     SELECT 
                         dk.MaLHP,
@@ -92,7 +237,6 @@ namespace QuanLySinhVien.Controllers
                                 MaLHP = row["MaLHP"].ToString(),
                                 TenMH = row["TenMH"].ToString(),
                                 SoTinChi = row["SoTinChi"] == DBNull.Value ? (int?)null : Convert.ToInt32(row["SoTinChi"]),
-
                                 DiemChuyenCan = ParseDbFloat(row["DiemChuyenCan"]),
                                 DiemGiuaKy = ParseDbFloat(row["DiemGiuaKy"]),
                                 DiemCuoiKy = ParseDbFloat(row["DiemCuoiKy"]),
@@ -116,14 +260,13 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // POST: Diem/NhapDiem - Lưu tất cả điểm
+        // POST: Diem/NhapDiem - Lưu tất cả điểm (Chỉ Admin)
         // ============================================
         [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult NhapDiem(string maSV, FormCollection form)
         {
-            
             try
             {
                 if (string.IsNullOrEmpty(maSV))
@@ -132,7 +275,6 @@ namespace QuanLySinhVien.Controllers
                     return RedirectToAction("NhapDiem");
                 }
 
-                // Lấy danh sách tất cả môn của sinh viên CHƯA có điểm
                 string getMonQuery = @"
                     SELECT DISTINCT dk.MaLHP 
                     FROM DangKyHocPhan dk
@@ -155,35 +297,29 @@ namespace QuanLySinhVien.Controllers
                 int soMonLuu = 0;
                 string loi = "";
 
-                // Duyệt từng môn
                 foreach (DataRow mon in dtMon.Rows)
                 {
                     string maLHP = mon["MaLHP"].ToString();
 
-                    // Lấy tên input từ form
                     string formKeyCC = "DiemChuyenCan_" + maLHP;
                     string formKeyGK = "DiemGiuaKy_" + maLHP;
                     string formKeyCK = "DiemCuoiKy_" + maLHP;
 
-                    // Parse điểm
                     float? diemCC = ParseInputFloat(form[formKeyCC]);
                     float? diemGK = ParseInputFloat(form[formKeyGK]);
                     float? diemCK = ParseInputFloat(form[formKeyCK]);
 
-                    // Tính điểm tổng kết
                     float? diemTK = null;
                     if (diemCC.HasValue && diemGK.HasValue && diemCK.HasValue)
                     {
                         diemTK = (float)Math.Round((diemCC.Value * 0.1f) + (diemGK.Value * 0.3f) + (diemCK.Value * 0.6f), 2);
                     }
 
-                    // Nếu không nhập gì → skip môn này
                     if (!diemCC.HasValue && !diemGK.HasValue && !diemCK.HasValue)
                     {
                         continue;
                     }
 
-                    // Cập nhật database
                     try
                     {
                         string updateQuery = @"
@@ -216,7 +352,6 @@ namespace QuanLySinhVien.Controllers
                     }
                 }
 
-                // Hiển thị kết quả
                 if (soMonLuu > 0)
                 {
                     TempData["SuccessMessage"] = $"✅ Lưu thành công {soMonLuu} môn cho sinh viên [{maSV}]";
@@ -240,110 +375,9 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // GET: Diem/XemDiem - Xem điểm sinh viên
+        // GET: Diem/BangDiemLop - Xem bảng điểm lớp (Chỉ Admin)
         // ============================================
-        [HttpGet]
-        public ActionResult XemDiem(string maSV = null)
-        {
-            List<DiemThongKe> danhSach = new List<DiemThongKe>();
-
-            if (!string.IsNullOrEmpty(maSV))
-            {
-                string query = @"
-                    SELECT 
-                        dk.MaSV,
-                        sv.HoTenSV,
-                        dk.MaLHP,
-                        mh.TenMH,
-                        mh.SoTinChi,
-                        dk.DiemChuyenCan,
-                        dk.DiemGiuaKy,
-                        dk.DiemCuoiKy,
-                        dk.DiemTongKet,
-                        CASE 
-                            WHEN dk.DiemTongKet IS NULL THEN 'Chưa có'
-                            WHEN dk.DiemTongKet >= 8.5 THEN 'Giỏi'
-                            WHEN dk.DiemTongKet >= 7.0 THEN 'Khá'
-                            WHEN dk.DiemTongKet >= 5.5 THEN 'Trung bình'
-                            WHEN dk.DiemTongKet >= 4.0 THEN 'Yếu'
-                            ELSE 'Kém'
-                        END AS XepLoai
-                    FROM DangKyHocPhan dk
-                    INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
-                    INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                    INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
-                    WHERE dk.MaSV = @MaSV
-                    ORDER BY mh.TenMH";
-
-                SqlParameter[] parameters = new SqlParameter[]
-                {
-                    new SqlParameter("@MaSV", maSV)
-                };
-
-                try
-                {
-                    DataTable dt = db.ExecuteQuery(query, parameters);
-
-                    if (dt.Rows.Count > 0)
-                    {
-                        ViewBag.TenSV = dt.Rows[0]["HoTenSV"].ToString();
-                        ViewBag.MaSVHienThi = maSV;
-
-                        // Tính điểm trung bình
-                        float tongDiem = 0;
-                        int soMonCoTK = 0;
-                        int tongTinChi = 0;
-
-                        foreach (DataRow row in dt.Rows)
-                        {
-                            float? diemTK = ParseDbFloat(row["DiemTongKet"]);
-                            int tinChi = row["SoTinChi"] == DBNull.Value ? 0 : Convert.ToInt32(row["SoTinChi"]);
-
-                            if (diemTK.HasValue)
-                            {
-                                tongDiem += diemTK.Value;
-                                soMonCoTK++;
-                                tongTinChi += tinChi;
-                            }
-
-                            danhSach.Add(new DiemThongKe
-                            {
-                                MaSV = row["MaSV"].ToString(),
-                                HoTenSV = row["HoTenSV"].ToString(),
-                                MaLHP = row["MaLHP"].ToString(),
-                                TenMH = row["TenMH"].ToString(),
-                                SoTinChi = tinChi,
-                                DiemChuyenCan = ParseDbFloat(row["DiemChuyenCan"]),
-                                DiemGiuaKy = ParseDbFloat(row["DiemGiuaKy"]),
-                                DiemCuoiKy = ParseDbFloat(row["DiemCuoiKy"]),
-                                DiemTongKet = diemTK,
-                                XepLoai = row["XepLoai"].ToString()
-                            });
-                        }
-
-                        // Tính trung bình
-                        ViewBag.DiemTrungBinh = soMonCoTK > 0 ? (tongDiem / soMonCoTK).ToString("0.00") : "Chưa có";
-                        ViewBag.TongTinChi = tongTinChi;
-                    }
-                    else
-                    {
-                        TempData["InfoMessage"] = $"Sinh viên [{maSV}] chưa đăng ký môn học nào.";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
-                }
-            }
-
-            LoadDanhSachSinhVien();
-            ViewBag.MaSV = maSV;
-            return View(danhSach);
-        }
-
-        // ============================================
-        // GET: Diem/BangDiemLop - Xem bảng điểm lớp
-        // ============================================
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public ActionResult BangDiemLop(string maLop = null, string maHK = null)
         {

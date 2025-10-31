@@ -47,7 +47,7 @@
                     <label class="form-label"><strong>Sinh viên:</strong></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-user-graduate"></i></span>
-                        @Html.DropDownList("maSV",
+                        @Html.DropDownList("MaSV",
                             (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
                             new { @class = "form-select" })
                     </div>
@@ -72,7 +72,7 @@
             @using (Html.BeginForm("NhapDiem", "Diem", FormMethod.Post))
             {
                 @Html.AntiForgeryToken()
-                <input type="hidden" name="maSV" value="@ViewBag.MaSV" />
+                <input type="hidden" name="MaSV" value="@ViewBag.MaSV" />
 
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i>

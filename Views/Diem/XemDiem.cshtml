@@ -5,6 +5,7 @@
 }
 
 <div class="row mb-4">
+
     <div class="col-12">
         <h2 class="page-title">
             <i class="fas fa-chart-line"></i> Xem điểm sinh viên
@@ -29,31 +30,35 @@
 }
 
 <div class="card">
-    <div class="card-header">
-        <i class="fas fa-search"></i> Tìm kiếm sinh viên
-    </div>
-    <div class="card-body">
-        @using (Html.BeginForm("XemDiem", "Diem", FormMethod.Get))
-        {
-            <div class="row">
-                <div class="col-md-8">
-                    <label class="form-label">Nhập mã sinh viên:</label>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <input type="text" name="maSV" class="form-control me-2"
-                                   placeholder="Nhập mã sinh viên (VD: SV001)"
-                                   value="@ViewBag.MaSV" />
+    @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+    {
+        <div class="card-header">
+            <i class="fas fa-search"></i> Tìm kiếm sinh viên
+        </div>
+        <div class="card-body">
+            @using (Html.BeginForm("XemDiem", "Diem", FormMethod.Get))
+            {
+                <div class="row">
+                    <div class="col-md-8">
+                        <label class="form-label">Nhập mã sinh viên:</label>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <input type="text" name="MaSV" class="form-control me-2"
+                                       placeholder="Nhập mã sinh viên (VD: SV001)"
+                                       value="@ViewBag.MaSV" />
+                            </div>
                         </div>
                     </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Xem điểm
+                        </button>
+                    </div>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search"></i> Xem điểm
-                    </button>
-                </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
+
 </div>
 
 @if (Model != null && Model.Any())

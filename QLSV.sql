@@ -51,7 +51,7 @@ CREATE TABLE GiangVien (
     CONSTRAINT FK_GiangVien_Khoa FOREIGN KEY (MaKhoa) REFERENCES Khoa(MaKhoa),
     CONSTRAINT FK_GiangVien_ChucVu FOREIGN KEY (MaChucVu) REFERENCES ChucVu(MaChucVu)
 )
-
+SELECT MaGV, HoTenGV, MaKhoa FROM GiangVien WHERE MaKhoa = 'CNTT'
 -- Bảng 5: Lop
 CREATE TABLE Lop (
     MaLop NVARCHAR(10) PRIMARY KEY,
@@ -1782,3 +1782,149 @@ SET @BackupFile = 'D:\QLSV_DoAn_' + CONVERT(VARCHAR(8), GETDATE(), 112) + '.bak'
 BACKUP DATABASE [QLSV_DoAn_2]
 TO DISK = @BackupFile
 WITH INIT, STATS = 10;
+
+
+-- ============================================
+-- BẢNG: DeThi (Đề Thi)
+-- ============================================
+CREATE TABLE DeThi (
+    MaDT NVARCHAR(10) PRIMARY KEY,
+    TenDT NVARCHAR(200) NOT NULL,
+    MoTa NVARCHAR(500),
+    MaKhoa NVARCHAR(10) NOT NULL,
+    SoCau INT DEFAULT 0,
+    ThoiGianLamBai INT,  -- Tính bằng phút
+    TrangThai BIT DEFAULT 1,  -- 1: Hoạt động, 0: Không hoạt động
+    NgayTao DATETIME DEFAULT GETDATE(),
+    NgayCapNhat DATETIME,
+    
+    CONSTRAINT FK_DeThi_Khoa FOREIGN KEY (MaKhoa) REFERENCES Khoa(MaKhoa)
+)
+GO
+
+-- ============================================
+-- BẢNG: CauHoi (Câu Hỏi)
+-- ============================================
+CREATE TABLE CauHoi (
+    MaCauHoi INT IDENTITY(1,1) PRIMARY KEY,
+    MaDT NVARCHAR(10) NOT NULL,
+    NoiDungCau NVARCHAR(MAX) NOT NULL,
+    LoaiCau NVARCHAR(20),  -- 'TN': Trắc nghiệm, 'TL': Tự luận, 'HTN': Hỏi - Tự luận
+    DapAnDung NVARCHAR(MAX),  -- Để lưu đáp án (có thể lưu JSON cho trắc nghiệm)
+    DiemCau FLOAT DEFAULT 1,
+    ThuTu INT,  -- Thứ tự câu hỏi
+    NgayTao DATETIME DEFAULT GETDATE(),
+    
+    CONSTRAINT FK_CauHoi_DeThi FOREIGN KEY (MaDT) REFERENCES DeThi(MaDT) ON DELETE CASCADE
+)
+GO
+
+-- ============================================
+-- BẢNG: DapAnTracNghiem (Đáp Án Trắc Nghiệm - Nếu cần lưu chi tiết)
+-- ============================================
+CREATE TABLE DapAnTracNghiem (
+    MaDapAn INT IDENTITY(1,1) PRIMARY KEY,
+    MaCauHoi INT NOT NULL,
+    ThuTu INT,  -- A, B, C, D (1, 2, 3, 4)
+    NoiDungDapAn NVARCHAR(MAX),
+    LaDapAnDung BIT DEFAULT 0,
+    
+    CONSTRAINT FK_DapAnTN_CauHoi FOREIGN KEY (MaCauHoi) REFERENCES CauHoi(MaCauHoi) ON DELETE CASCADE
+)
+GO
+
+-- ============================================
+-- INDEX
+-- ============================================
+CREATE INDEX IDX_DeThi_MaKhoa ON DeThi(MaKhoa);
+CREATE INDEX IDX_CauHoi_MaDT ON CauHoi(MaDT);
+CREATE INDEX IDX_DapAnTN_MaCauHoi ON DapAnTracNghiem(MaCauHoi);
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Lấy thống kê đề thi
+-- ============================================
+CREATE PROCEDURE sp_LayThongKeDeThi
+    @MaKhoa NVARCHAR(10) = NULL
+AS
+BEGIN
+    SELECT 
+        dt.MaDT,
+        dt.TenDT,
+        k.TenKhoa,
+        dt.SoCau,
+        dt.ThoiGianLamBai,
+        dt.TrangThai,
+        dt.NgayTao,
+        (SELECT COUNT(*) FROM CauHoi WHERE MaDT = dt.MaDT) AS TongSoCau
+    FROM DeThi dt
+    INNER JOIN Khoa k ON dt.MaKhoa = k.MaKhoa
+    WHERE 1=1
+        AND (dt.MaKhoa = @MaKhoa OR @MaKhoa IS NULL)
+    ORDER BY dt.NgayTao DESC
+END
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Lấy chi tiết đề thi
+-- ============================================
+CREATE PROCEDURE sp_LayChiTietDeThi
+    @MaDT NVARCHAR(10)
+AS
+BEGIN
+    SELECT 
+        ch.MaCauHoi,
+        ch.NoiDungCau,
+        ch.LoaiCau,
+        ch.DiemCau,
+        ch.ThuTu,
+        ch.DapAnDung,
+        (SELECT COUNT(*) FROM DapAnTracNghiem WHERE MaCauHoi = ch.MaCauHoi) AS SoDapAn
+    FROM CauHoi ch
+    WHERE ch.MaDT = @MaDT
+    ORDER BY ch.ThuTu ASC
+END
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Xóa đề thi
+-- ============================================
+CREATE PROCEDURE sp_XoaDeThi
+    @MaDT NVARCHAR(10)
+AS
+BEGIN
+    BEGIN TRANSACTION
+    BEGIN TRY
+        -- Xóa đáp án trắc nghiệm trước
+        DELETE FROM DapAnTracNghiem 
+        WHERE MaCauHoi IN (SELECT MaCauHoi FROM CauHoi WHERE MaDT = @MaDT)
+        
+        -- Xóa câu hỏi
+        DELETE FROM CauHoi WHERE MaDT = @MaDT
+        
+        -- Xóa đề thi
+        DELETE FROM DeThi WHERE MaDT = @MaDT
+        
+        COMMIT TRANSACTION
+        PRINT N'Xóa đề thi thành công!'
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION
+        THROW
+    END CATCH
+END
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Cập nhật số câu hỏi
+-- ============================================
+CREATE PROCEDURE sp_CapNhatSoCauDeThi
+    @MaDT NVARCHAR(10)
+AS
+BEGIN
+    UPDATE DeThi
+    SET SoCau = (SELECT COUNT(*) FROM CauHoi WHERE MaDT = @MaDT),
+        NgayCapNhat = GETDATE()
+    WHERE MaDT = @MaDT
+END
+GO

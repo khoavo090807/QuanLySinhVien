@@ -8,12 +8,38 @@ using System.Web.Mvc;
 
 namespace QuanLySinhVien.Controllers
 {
+    [Authorize]
     public class DangKyHocPhanController : Controller
     {
-        private DatabaseHelper db = new DatabaseHelper();
+        private readonly DatabaseHelper db = new DatabaseHelper();
+        private string CurrentUserId => User.Identity.Name;
+        private string CurrentRole => GetCurrentUserRole();
 
         // ============================================
-        // HELPER: Parse float từ Database
+        // LẤY VAI TRÒ NGƯỜI DÙNG
+        // ============================================
+        private string GetCurrentUserRole()
+        {
+            var dt = db.ExecuteQuery(
+                "SELECT LoaiTaiKhoan FROM Account WHERE TenDangNhap = @TenDangNhap",
+                new SqlParameter[] { new SqlParameter("@TenDangNhap", CurrentUserId) }
+            );
+
+            return dt.Rows.Count > 0 ? dt.Rows[0]["LoaiTaiKhoan"].ToString() : "Unknown";
+        }
+
+        private string GetMaSVFromAccount(string tenDangNhap)
+        {
+            var dt = db.ExecuteQuery(
+                "SELECT MaTaiKhoan FROM Account WHERE TenDangNhap = @TenDangNhap",
+                new SqlParameter[] { new SqlParameter("@TenDangNhap", tenDangNhap) }
+            );
+
+            return dt.Rows.Count > 0 ? dt.Rows[0]["MaTaiKhoan"].ToString() : null;
+        }
+
+        // ============================================
+        // PARSE FLOAT
         // ============================================
         private float? ParseDbFloat(object dbValue)
         {
@@ -29,9 +55,6 @@ namespace QuanLySinhVien.Controllers
             try { return Convert.ToSingle(dbValue); } catch { return null; }
         }
 
-        // ============================================
-        // HELPER: Parse float từ Input Form
-        // ============================================
         private float? ParseInputFloat(string s)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;
@@ -44,35 +67,52 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // GET: DangKyHocPhan - Xem danh sách đã đăng ký
+        // INDEX - Danh sách đăng ký
         // ============================================
-        public ActionResult Index(string MaSV)
+        public ActionResult Index(string MaSV = null)
         {
-            List<DangKyHocPhan> danhSach = new List<DangKyHocPhan>();
+            var danhSach = new List<DangKyHocPhan>();
+            string query = @"
+                SELECT dk.MaSV, dk.MaLHP, dk.NgayDangKy,
+                       dk.DiemChuyenCan, dk.DiemGiuaKy, dk.DiemCuoiKy, dk.DiemTongKet,
+                       sv.HoTenSV, mh.TenMH, hk.TenHK
+                FROM DangKyHocPhan dk
+                INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
+                INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
+                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
+                WHERE 1=1";
 
-            string query = @"SELECT 
-                            dk.MaSV, dk.MaLHP, dk.NgayDangKy,
-                            dk.DiemChuyenCan, dk.DiemGiuaKy, dk.DiemCuoiKy, dk.DiemTongKet,
-                            sv.HoTenSV, mh.TenMH, hk.TenHK
-                            FROM DangKyHocPhan dk
-                            INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
-                            INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
-                            INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                            INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
-                            WHERE 1=1";
+            var parameters = new List<SqlParameter>();
 
-            List<SqlParameter> parameters = new List<SqlParameter>();
-            if (!string.IsNullOrEmpty(MaSV))
+            if (CurrentRole == "Student")
+            {
+                string maSV = GetMaSVFromAccount(CurrentUserId);
+                if (string.IsNullOrEmpty(maSV))
+                    return HttpNotFound("Không tìm thấy sinh viên.");
+
+                query += " AND dk.MaSV = @MaSV";
+                parameters.Add(new SqlParameter("@MaSV", maSV));
+                ViewBag.IsStudent = true;
+                ViewBag.CurrentMaSV = maSV;
+            }
+            else if (!string.IsNullOrEmpty(MaSV))
             {
                 query += " AND dk.MaSV = @MaSV";
                 parameters.Add(new SqlParameter("@MaSV", MaSV));
+                ViewBag.IsStudent = false;
             }
+            else
+            {
+                ViewBag.IsStudent = false;
+            }
+
             query += " ORDER BY dk.NgayDangKy DESC";
 
             DataTable dt = db.ExecuteQuery(query, parameters.ToArray());
             foreach (DataRow row in dt.Rows)
             {
-                DangKyHocPhan dk = new DangKyHocPhan
+                danhSach.Add(new DangKyHocPhan
                 {
                     MaSV = row["MaSV"].ToString(),
                     MaLHP = row["MaLHP"].ToString(),
@@ -84,144 +124,187 @@ namespace QuanLySinhVien.Controllers
                     HoTenSV = row["HoTenSV"].ToString(),
                     TenMH = row["TenMH"].ToString(),
                     TenHK = row["TenHK"].ToString()
-                };
-                danhSach.Add(dk);
+                });
             }
 
-            ViewBag.MaSV = MaSV;
+            ViewBag.MaSV = MaSV ?? (CurrentRole == "Student" ? GetMaSVFromAccount(CurrentUserId) : null);
             ViewBag.TotalCount = danhSach.Count;
+            ViewBag.CurrentRole = CurrentRole;
             return View(danhSach);
         }
 
         // ============================================
-        // GET: DangKyHocPhan/Create - Hiển thị form
+        // CREATE - Form
         // ============================================
         public ActionResult Create()
         {
-            LoadDanhSachSinhVien();
-            LoadDanhSachLopHocPhan();
+            if (CurrentRole == "Student")
+            {
+                string maSV = GetMaSVFromAccount(CurrentUserId);
+                if (string.IsNullOrEmpty(maSV)) return HttpNotFound();
+
+                ViewBag.MaSV = maSV;
+                LoadDanhSachLopHocPhan_TheoKhoaSV(maSV);
+            }
+            else
+            {
+                LoadDanhSachSinhVien();
+                LoadDanhSachLopHocPhan();
+            }
+
             return View();
         }
 
         // ============================================
-        // POST: DangKyHocPhan/Create - Xử lý đăng ký
+        // CREATE - POST
         // ============================================
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(string MaSV, string MaLHP)
         {
+            if (CurrentRole == "Student")
+            {
+                MaSV = GetMaSVFromAccount(CurrentUserId);
+                if (string.IsNullOrEmpty(MaSV)) return HttpNotFound();
+            }
+
             try
             {
-                // Kiểm tra sĩ số lớp chưa đầy (kiểm tra trước khi gọi SP)
-                string checkSiSoQuery = @"
-                    SELECT 
-                        lhp.SoLuongToiDa,
-                        (SELECT COUNT(*) FROM DangKyHocPhan WHERE MaLHP = @MaLHP) AS SoSinhVienDangKy
-                    FROM LopHocPhan lhp
-                    WHERE lhp.MaLHP = @MaLHP";
-                SqlParameter[] checkSiSoParams = new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) };
+                // 1. KIỂM TRA THỜI GIAN HỌC KỲ
+                string checkThoiGianQuery = @"
+            SELECT hk.NgayBatDau, hk.NgayKetThuc
+            FROM LopHocPhan lhp
+            INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
+            WHERE lhp.MaLHP = @MaLHP";
 
-                DataTable siSoDt = db.ExecuteQuery(checkSiSoQuery, checkSiSoParams);
+                var thoiGianDt = db.ExecuteQuery(checkThoiGianQuery,
+                    new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) });
+
+                if (thoiGianDt.Rows.Count == 0)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy lớp học phần.";
+                    return RedirectToCreateWithData(MaSV);
+                }
+
+                DateTime ngayBatDau = Convert.ToDateTime(thoiGianDt.Rows[0]["NgayBatDau"]);
+                DateTime ngayKetThuc = Convert.ToDateTime(thoiGianDt.Rows[0]["NgayKetThuc"]);
+                DateTime ngayHienTai = DateTime.Now;
+
+                if (ngayHienTai < ngayBatDau)
+                {
+                    TempData["ErrorMessage"] = $"Lớp [{MaLHP}] chưa mở đăng ký (từ {ngayBatDau:dd/MM/yyyy}).";
+                    return RedirectToCreateWithData(MaSV);
+                }
+
+                if (ngayHienTai > ngayKetThuc)
+                {
+                    TempData["ErrorMessage"] = $"Lớp [{MaLHP}] đã đóng đăng ký (đến {ngayKetThuc:dd/MM/yyyy}).";
+                    return RedirectToCreateWithData(MaSV);
+                }
+
+                // 2. KIỂM TRA SĨ SỐ
+                string checkSiSoQuery = @"
+            SELECT lhp.SoLuongToiDa,
+                   (SELECT COUNT(*) FROM DangKyHocPhan WHERE MaLHP = @MaLHP) AS SoSinhVienDangKy
+            FROM LopHocPhan lhp WHERE lhp.MaLHP = @MaLHP";
+
+                var siSoDt = db.ExecuteQuery(checkSiSoQuery,
+                    new SqlParameter[] { new SqlParameter("@MaLHP", MaLHP) });
+
                 if (siSoDt.Rows.Count > 0)
                 {
-                    DataRow siSoRow = siSoDt.Rows[0];
-                    int soLuongToiDa = Convert.ToInt32(siSoRow["SoLuongToiDa"]);
-                    int soSinhVienDangKy = Convert.ToInt32(siSoRow["SoSinhVienDangKy"]);
+                    int soLuongToiDa = Convert.ToInt32(siSoDt.Rows[0]["SoLuongToiDa"]);
+                    int soDangKy = Convert.ToInt32(siSoDt.Rows[0]["SoSinhVienDangKy"]);
 
-                    if (soSinhVienDangKy >= soLuongToiDa)
+                    if (soDangKy >= soLuongToiDa)
                     {
-                        TempData["ErrorMessage"] = $"Lỗi: Lớp học phần [{MaLHP}] đã đầy ({soSinhVienDangKy}/{soLuongToiDa})!";
-                        LoadDanhSachSinhVien();
-                        LoadDanhSachLopHocPhan();
-                        return View();
+                        TempData["ErrorMessage"] = $"Lớp [{MaLHP}] đã đầy ({soDangKy}/{soLuongToiDa})!";
+                        return RedirectToCreateWithData(MaSV);
                     }
                 }
 
-                // Sử dụng stored procedure sp_DangKyMonHoc
-                // SP sẽ tự động kiểm tra: sinh viên tồn tại, lớp tồn tại, trùng đăng ký, tiên quyết
-                SqlParameter[] parameters = new SqlParameter[]
-                {
-                    new SqlParameter("@MaSV", MaSV),
-                    new SqlParameter("@MaLHP", MaLHP)
-                };
+                // 3. GỌI SP ĐĂNG KÝ
+                db.ExecuteStoredProcedureNonQuery("sp_DangKyMonHoc",
+                    new SqlParameter[] {
+                new SqlParameter("@MaSV", MaSV),
+                new SqlParameter("@MaLHP", MaLHP)
+                    });
 
-                db.ExecuteStoredProcedureNonQuery("sp_DangKyMonHoc", parameters);
-
-                // Kiểm tra xem đăng ký có thành công không
-                string checkQuery = "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
-                SqlParameter[] checkParams = new SqlParameter[]
-                {
-                    new SqlParameter("@MaSV", MaSV),
-                    new SqlParameter("@MaLHP", MaLHP)
-                };
-                int registered = Convert.ToInt32(db.ExecuteScalar(checkQuery, checkParams));
+                // 4. KIỂM TRA THÀNH CÔNG
+                int registered = Convert.ToInt32(db.ExecuteScalar(
+                    "SELECT COUNT(*) FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP",
+                    new SqlParameter[] {
+                new SqlParameter("@MaSV", MaSV),
+                new SqlParameter("@MaLHP", MaLHP)
+                    }));
 
                 if (registered > 0)
                 {
-                    TempData["SuccessMessage"] = "Đăng ký học phần thành công!";
-                    return RedirectToAction("Index", new { MaSV = MaSV });
+                    TempData["SuccessMessage"] = "Đăng ký thành công!";
+                    return RedirectToAction("Index", new { MaSV = CurrentRole == "Student" ? (string)null : MaSV });
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Lỗi: Không thể đăng ký. Vui lòng kiểm tra lại điều kiện.";
+                    TempData["ErrorMessage"] = "Đăng ký thất bại. Kiểm tra điều kiện.";
                 }
             }
             catch (SqlException ex)
             {
-                if (ex.Number == 2812)
-                {
-                    TempData["ErrorMessage"] = "Lỗi: Stored procedure 'sp_DangKyMonHoc' chưa được tạo trong database.";
-                }
-                else if (ex.Number == 50000 || ex.Message.Contains("LỖI:"))
-                {
-                    // Lỗi từ stored procedure
-                    TempData["ErrorMessage"] = ex.Message.Replace("LỖI:", "").Trim();
-                }
-                else if (ex.Message.Contains("trg_KiemTraNgayDangKy"))
-                {
-                    TempData["ErrorMessage"] = "Lỗi: Đã hết hạn đăng ký hoặc học kỳ chưa bắt đầu.";
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = $"Lỗi SQL Server: {ex.Message}";
-                }
+                TempData["ErrorMessage"] = ex.Message.Contains("LỖI:")
+                    ? ex.Message.Replace("LỖI:", "").Trim()
+                    : ex.Message;
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
+                TempData["ErrorMessage"] = ex.Message;
             }
 
-            LoadDanhSachSinhVien();
-            LoadDanhSachLopHocPhan();
-            return View();
+            return RedirectToCreateWithData(MaSV);
+        }
+
+        private ActionResult RedirectToCreateWithData(string maSV)
+        {
+            if (CurrentRole == "Student")
+            {
+                LoadDanhSachLopHocPhan_TheoKhoaSV(maSV);
+            }
+            else
+            {
+                LoadDanhSachSinhVien();
+                LoadDanhSachLopHocPhan();
+                ViewBag.MaSV = maSV;
+            }
+            
+            return View("Create");
         }
 
         // ============================================
-        // GET: DangKyHocPhan/Edit - Form nhập điểm
+        // EDIT
         // ============================================
         public ActionResult Edit(string MaSV, string maLHP)
         {
-            if (string.IsNullOrEmpty(MaSV) || string.IsNullOrEmpty(maLHP))
+            if (CurrentRole == "Student" && MaSV != GetMaSVFromAccount(CurrentUserId))
                 return HttpNotFound();
 
-            string query = @"SELECT 
-                            dk.*, sv.HoTenSV, mh.TenMH
-                            FROM DangKyHocPhan dk
-                            INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
-                            INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
-                            INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                            WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
+            string query = @"
+                SELECT dk.*, sv.HoTenSV, mh.TenMH
+                FROM DangKyHocPhan dk
+                INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
+                INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
+                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
 
-            SqlParameter[] parameters = {
-                new SqlParameter("@MaSV", MaSV),
-                new SqlParameter("@MaLHP", maLHP)
-            };
+            var dt = db.ExecuteQuery(query,
+                new SqlParameter[] {
+                    new SqlParameter("@MaSV", MaSV),
+                    new SqlParameter("@MaLHP", maLHP)
+                });
 
-            DataTable dt = db.ExecuteQuery(query, parameters);
             if (dt.Rows.Count == 0) return HttpNotFound();
 
             DataRow row = dt.Rows[0];
-            DangKyHocPhan dk = new DangKyHocPhan
+            return View(new DangKyHocPhan
             {
                 MaSV = row["MaSV"].ToString(),
                 MaLHP = row["MaLHP"].ToString(),
@@ -232,17 +315,16 @@ namespace QuanLySinhVien.Controllers
                 DiemTongKet = ParseDbFloat(row["DiemTongKet"]),
                 HoTenSV = row["HoTenSV"].ToString(),
                 TenMH = row["TenMH"].ToString()
-            };
-            return View(dk);
+            });
         }
 
-        // ============================================
-        // POST: DangKyHocPhan/Edit - Lưu điểm
-        // ============================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(string MaSV, string MaLHP, string DiemChuyenCan, string DiemGiuaKy, string DiemCuoiKy)
         {
+            if (CurrentRole == "Student" && MaSV != GetMaSVFromAccount(CurrentUserId))
+                return HttpNotFound();
+
             try
             {
                 float? diemCC = ParseInputFloat(DiemChuyenCan);
@@ -251,67 +333,65 @@ namespace QuanLySinhVien.Controllers
 
                 float? diemTongKet = null;
                 if (diemCC.HasValue && diemGK.HasValue && diemCK.HasValue)
-                    diemTongKet = (float)Math.Round((diemCC.Value * 0.1f) + (diemGK.Value * 0.3f) + (diemCK.Value * 0.6f), 2);
+                    diemTongKet = (float)Math.Round(diemCC.Value * 0.1f + diemGK.Value * 0.3f + diemCK.Value * 0.6f, 2);
 
-                string query = @"UPDATE DangKyHocPhan 
-                               SET DiemChuyenCan = @DiemChuyenCan,
-                                   DiemGiuaKy = @DiemGiuaKy,
-                                   DiemCuoiKy = @DiemCuoiKy,
-                                   DiemTongKet = @DiemTongKet
-                               WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
+                string query = @"
+                    UPDATE DangKyHocPhan 
+                    SET DiemChuyenCan = @DiemChuyenCan,
+                        DiemGiuaKy = @DiemGiuaKy,
+                        DiemCuoiKy = @DiemCuoiKy,
+                        DiemTongKet = @DiemTongKet
+                    WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
 
-                SqlParameter[] parameters = {
-                    new SqlParameter("@MaSV", MaSV),
-                    new SqlParameter("@MaLHP", MaLHP),
-                    new SqlParameter("@DiemChuyenCan", (object)diemCC ?? DBNull.Value),
-                    new SqlParameter("@DiemGiuaKy", (object)diemGK ?? DBNull.Value),
-                    new SqlParameter("@DiemCuoiKy", (object)diemCK ?? DBNull.Value),
-                    new SqlParameter("@DiemTongKet", (object)diemTongKet ?? DBNull.Value)
-                };
+                int result = db.ExecuteNonQuery(query,
+                    new SqlParameter[] {
+                        new SqlParameter("@MaSV", MaSV),
+                        new SqlParameter("@MaLHP", MaLHP),
+                        new SqlParameter("@DiemChuyenCan", (object)diemCC ?? DBNull.Value),
+                        new SqlParameter("@DiemGiuaKy", (object)diemGK ?? DBNull.Value),
+                        new SqlParameter("@DiemCuoiKy", (object)diemCK ?? DBNull.Value),
+                        new SqlParameter("@DiemTongKet", (object)diemTongKet ?? DBNull.Value)
+                    });
 
-                int result = db.ExecuteNonQuery(query, parameters);
-                if (result > 0)
-                    TempData["SuccessMessage"] = "Cập nhật điểm thành công!";
-                else
-                    TempData["ErrorMessage"] = "Không có thay đổi hoặc không tìm thấy dữ liệu.";
+                TempData[result > 0 ? "SuccessMessage" : "ErrorMessage"] =
+                    result > 0 ? "Cập nhật điểm thành công!" : "Không có thay đổi.";
 
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
-                return RedirectToAction("Edit", new { MaSV = MaSV, maLHP = MaLHP });
+                return RedirectToAction("Edit", new { MaSV, MaLHP });
             }
         }
 
         // ============================================
-        // GET: DangKyHocPhan/Delete - Xác nhận xóa
+        // DELETE
         // ============================================
         public ActionResult Delete(string MaSV, string maLHP)
         {
-            if (string.IsNullOrEmpty(MaSV) || string.IsNullOrEmpty(maLHP))
+            if (CurrentRole == "Student" && MaSV != GetMaSVFromAccount(CurrentUserId))
                 return HttpNotFound();
 
-            string query = @"SELECT 
-                            dk.*, sv.HoTenSV, mh.TenMH, hk.TenHK
-                            FROM DangKyHocPhan dk
-                            INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
-                            INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
-                            INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                            INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
-                            WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
+            string query = @"
+                SELECT dk.*, sv.HoTenSV, mh.TenMH, hk.TenHK
+                FROM DangKyHocPhan dk
+                INNER JOIN SinhVien sv ON dk.MaSV = sv.MaSV
+                INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
+                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
+                WHERE dk.MaSV = @MaSV AND dk.MaLHP = @MaLHP";
 
-            SqlParameter[] parameters = {
-                new SqlParameter("@MaSV", MaSV),
-                new SqlParameter("@MaLHP", maLHP)
-            };
+            var dt = db.ExecuteQuery(query,
+                new SqlParameter[] {
+                    new SqlParameter("@MaSV", MaSV),
+                    new SqlParameter("@MaLHP", maLHP)
+                });
 
-            DataTable dt = db.ExecuteQuery(query, parameters);
-            if (dt.Rows.Count == 0)
-                return HttpNotFound();
+            if (dt.Rows.Count == 0) return HttpNotFound();
 
             DataRow row = dt.Rows[0];
-            DangKyHocPhan dk = new DangKyHocPhan
+            return View(new DangKyHocPhan
             {
                 MaSV = row["MaSV"].ToString(),
                 MaLHP = row["MaLHP"].ToString(),
@@ -319,105 +399,132 @@ namespace QuanLySinhVien.Controllers
                 HoTenSV = row["HoTenSV"].ToString(),
                 TenMH = row["TenMH"].ToString(),
                 TenHK = row["TenHK"].ToString()
-            };
-            return View(dk);
+            });
         }
 
-        // ============================================
-        // POST: DangKyHocPhan/Delete - Hủy đăng ký
-        // ============================================
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(string MaSV, string maLHP)
         {
-            try
-            {
-                string query = "DELETE FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP";
-                SqlParameter[] parameters = {
+            if (CurrentRole == "Student" && MaSV != GetMaSVFromAccount(CurrentUserId))
+                return HttpNotFound();
+
+            int result = db.ExecuteNonQuery(
+                "DELETE FROM DangKyHocPhan WHERE MaSV = @MaSV AND MaLHP = @MaLHP",
+                new SqlParameter[] {
                     new SqlParameter("@MaSV", MaSV),
                     new SqlParameter("@MaLHP", maLHP)
-                };
-                int result = db.ExecuteNonQuery(query, parameters);
-                if (result > 0)
-                    TempData["SuccessMessage"] = "Hủy đăng ký học phần thành công!";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Lỗi: {ex.Message}";
-            }
+                });
+
+            TempData[result > 0 ? "SuccessMessage" : "ErrorMessage"] =
+                result > 0 ? "Hủy đăng ký thành công!" : "Không tìm thấy bản ghi.";
+
             return RedirectToAction("Index");
         }
 
         // ============================================
-        // HELPER: Load danh sách sinh viên
+        // LOAD DANH SÁCH
         // ============================================
         private void LoadDanhSachSinhVien()
         {
-            string query = "SELECT MaSV, HoTenSV FROM SinhVien ORDER BY HoTenSV";
-            DataTable dt = db.ExecuteQuery(query);
+            if (CurrentRole != "Admin") return;
 
-            List<SelectListItem> danhSach = new List<SelectListItem>();
+            var dt = db.ExecuteQuery("SELECT MaSV, HoTenSV FROM SinhVien ORDER BY HoTenSV");
+            var list = new List<SelectListItem>();
             foreach (DataRow row in dt.Rows)
             {
-                danhSach.Add(new SelectListItem
+                list.Add(new SelectListItem
                 {
                     Value = row["MaSV"].ToString(),
-                    Text = row["MaSV"] + " - " + row["HoTenSV"].ToString()
+                    Text = $"{row["MaSV"]} - {row["HoTenSV"]}"
                 });
             }
-            ViewBag.DanhSachSinhVien = danhSach;
+            ViewBag.DanhSachSinhVien = list;
         }
 
-        // ============================================
-        // HELPER: Load danh sách lớp học phần
-        // ============================================
         private void LoadDanhSachLopHocPhan()
         {
-            string query = @"SELECT lhp.MaLHP, 
-                                   mh.TenMH, 
-                                   hk.TenHK, 
-                                   gv.HoTenGV,
-                                   lhp.SoLuongToiDa,
-                                   hk.NgayBatDau,
-                                   hk.NgayKetThuc,
-                                   (SELECT COUNT(*) FROM DangKyHocPhan WHERE MaLHP = lhp.MaLHP) AS SoSinhVienDangKy,
-                                   CASE 
-                                       WHEN GETDATE() < hk.NgayBatDau THEN '(Chưa mở) ' 
-                                       WHEN GETDATE() > hk.NgayKetThuc THEN '(Đã đóng) '
-                                       ELSE '(Đang mở) '
-                                   END AS TrangThaiHK
-                            FROM LopHocPhan lhp
-                            INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
-                            INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
-                            LEFT JOIN GiangVien gv ON lhp.MaGV = gv.MaGV
-                            ORDER BY hk.NgayBatDau DESC, mh.TenMH";
+            if (CurrentRole != "Admin") return;
 
-            DataTable dt = db.ExecuteQuery(query);
-            List<SelectListItem> danhSach = new List<SelectListItem>();
+            string query = @"
+                SELECT lhp.MaLHP, mh.TenMH, hk.TenHK, gv.HoTenGV, lhp.SoLuongToiDa,
+                       hk.NgayBatDau, hk.NgayKetThuc,
+                       (SELECT COUNT(*) FROM DangKyHocPhan WHERE MaLHP = lhp.MaLHP) AS SoSinhVienDangKy,
+                       CASE WHEN GETDATE() < hk.NgayBatDau THEN '(Chưa mở) '
+                            WHEN GETDATE() > hk.NgayKetThuc THEN '(Đã đóng) '
+                            ELSE '(Đang mở) ' END AS TrangThaiHK
+                FROM LopHocPhan lhp
+                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
+                LEFT JOIN GiangVien gv ON lhp.MaGV = gv.MaGV
+                ORDER BY hk.NgayBatDau DESC, mh.TenMH";
 
+            var dt = db.ExecuteQuery(query);
+            var list = new List<SelectListItem>();
             foreach (DataRow row in dt.Rows)
             {
-                string trangThaiHK = row["TrangThaiHK"].ToString();
-                int soSinhVienDangKy = Convert.ToInt32(row["SoSinhVienDangKy"]);
-                int soLuongToiDa = Convert.ToInt32(row["SoLuongToiDa"]);
-
-                // Kiểm tra nếu lớp đã đầy
-                string dayDuText = soSinhVienDangKy >= soLuongToiDa ? " [ĐÃ ĐẦY]" : "";
-
-                // Hiển thị số lượng sinh viên đã đăng ký
-                string soSVText = $" ({soSinhVienDangKy}/{soLuongToiDa})";
-
-                danhSach.Add(new SelectListItem
+                int daDangKy = Convert.ToInt32(row["SoSinhVienDangKy"]);
+                int toiDa = Convert.ToInt32(row["SoLuongToiDa"]);
+                string fullText = daDangKy >= toiDa ? " [ĐÃ ĐẦY]" : "";
+                list.Add(new SelectListItem
                 {
                     Value = row["MaLHP"].ToString(),
-                    Text = row["MaLHP"] + " - " +
-                           row["TenMH"] + " (" + row["TenHK"] + ") " +
-                           trangThaiHK + soSVText + dayDuText,
-                    Disabled = soSinhVienDangKy >= soLuongToiDa  // Vô hiệu hóa nếu đã đầy
+                    Text = $"{row["MaLHP"]} - {row["TenMH"]} ({row["TenHK"]}) {row["TrangThaiHK"]} ({daDangKy}/{toiDa}){fullText}",
+                    Disabled = daDangKy >= toiDa
                 });
             }
+            ViewBag.DanhSachLopHocPhan = list;
+        }
 
-            ViewBag.DanhSachLopHocPhan = danhSach;
+        private void LoadDanhSachLopHocPhan_TheoKhoaSV(string maSV)
+        {
+            var dt = db.ExecuteQuery(
+                @"SELECT sv.MaLop, l.MaKhoa
+                  FROM SinhVien sv
+                  INNER JOIN Lop l ON sv.MaLop = l.MaLop
+                  WHERE sv.MaSV = @MaSV",
+                new SqlParameter[] { new SqlParameter("@MaSV", maSV) }
+            );
+
+            if (dt.Rows.Count == 0)
+            {
+                ViewBag.DanhSachLopHocPhan = new List<SelectListItem>();
+                return;
+            }
+
+            string maKhoa = dt.Rows[0]["MaKhoa"].ToString();
+
+            string lhpQuery = @"
+                SELECT lhp.MaLHP, mh.TenMH, hk.TenHK, gv.HoTenGV, lhp.SoLuongToiDa,
+                       hk.NgayBatDau, hk.NgayKetThuc,
+                       (SELECT COUNT(*) FROM DangKyHocPhan WHERE MaLHP = lhp.MaLHP) AS SoSinhVienDangKy,
+                       CASE WHEN GETDATE() < hk.NgayBatDau THEN '(Chưa mở) '
+                            WHEN GETDATE() > hk.NgayKetThuc THEN '(Đã đóng) '
+                            ELSE '(Đang mở) ' END AS TrangThaiHK
+                FROM LopHocPhan lhp
+                INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+                INNER JOIN HocKy hk ON lhp.MaHK = hk.MaHK
+                LEFT JOIN GiangVien gv ON lhp.MaGV = gv.MaGV
+                WHERE mh.MaKhoa = @MaKhoa
+                ORDER BY hk.NgayBatDau DESC, mh.TenMH";
+
+            var lhpDt = db.ExecuteQuery(lhpQuery,
+                new SqlParameter[] { new SqlParameter("@MaKhoa", maKhoa) });
+
+            var list = new List<SelectListItem>();
+            foreach (DataRow row in lhpDt.Rows)
+            {
+                int daDangKy = Convert.ToInt32(row["SoSinhVienDangKy"]);
+                int toiDa = Convert.ToInt32(row["SoLuongToiDa"]);
+                string fullText = daDangKy >= toiDa ? " [ĐÃ ĐẦY]" : "";
+                list.Add(new SelectListItem
+                {
+                    Value = row["MaLHP"].ToString(),
+                    Text = $"{row["MaLHP"]} - {row["TenMH"]} ({row["TenHK"]}) {row["TrangThaiHK"]} ({daDangKy}/{toiDa}){fullText}",
+                    Disabled = daDangKy >= toiDa
+                });
+            }
+            ViewBag.DanhSachLopHocPhan = list;
         }
     }
 }

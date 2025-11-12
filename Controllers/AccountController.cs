@@ -8,6 +8,9 @@ using System.Text;
 using System.Web.Mvc;
 using System.Web.Security;
 using System.Web;
+using System.Net;
+using System.Net.Mail;
+using System.Linq;
 namespace QuanLySinhVien.Controllers
 {
     public class AccountController : Controller
@@ -325,5 +328,21 @@ namespace QuanLySinhVien.Controllers
                 // Log error nếu cần
             }
         }
+        [HttpGet]
+        [AllowAnonymous]
+        public ActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        
+        
+        
+
+        
+
+       
+
+        
     }
 }

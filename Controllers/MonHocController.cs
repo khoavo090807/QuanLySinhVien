@@ -77,6 +77,7 @@ namespace QuanLySinhVien.Controllers
         public ActionResult Create()
         {
             LoadDanhSachMonHoc();
+            LoadDanhSachKhoa();
             return View();
         }
 
@@ -85,51 +86,42 @@ namespace QuanLySinhVien.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create(MonHoc monHoc, string MaMHTienQuyet, int? HocKy, DateTime? ThoiGianBatDau)
         {
-            LoadDanhSachMonHoc();
+            LoadDanhSachKhoa();
 
             if (ModelState.IsValid)
             {
                 try
                 {
+                    // Kiểm tra khoa có tồn tại không
+                    if (string.IsNullOrEmpty(monHoc.MaKhoa))
+                    {
+                        ModelState.AddModelError("", "Vui lòng chọn khoa!");
+                        LoadDanhSachMonHoc();
+                        return View(monHoc);
+                    }
+
+                    string checkKhoaQuery = "SELECT COUNT(*) FROM Khoa WHERE MaKhoa = @MaKhoa";
+                    int khoaExists = Convert.ToInt32(db.ExecuteScalar(checkKhoaQuery,
+                        new SqlParameter[] { new SqlParameter("@MaKhoa", monHoc.MaKhoa) }));
+
+                    if (khoaExists == 0)
+                    {
+                        ModelState.AddModelError("", "Khoa không tồn tại!");
+                        LoadDanhSachMonHoc();
+                        return View(monHoc);
+                    }
+
                     // Sử dụng stored procedure sp_ThemMonHoc
                     SqlParameter[] parameters = new SqlParameter[]
                     {
-                        new SqlParameter("@MaMH", monHoc.MaMH),
-                        new SqlParameter("@TenMH", monHoc.TenMH),
-                        new SqlParameter("@SoTinChi", monHoc.SoTinChi),
-                        new SqlParameter("@MaMHTienQuyet", string.IsNullOrEmpty(MaMHTienQuyet) ? (object)DBNull.Value : MaMHTienQuyet)
+                new SqlParameter("@MaMH", monHoc.MaMH),
+                new SqlParameter("@TenMH", monHoc.TenMH),
+                new SqlParameter("@SoTinChi", monHoc.SoTinChi),
+                new SqlParameter("@MaKhoa", monHoc.MaKhoa),
+                new SqlParameter("@MaMHTienQuyet", string.IsNullOrEmpty(MaMHTienQuyet) ? (object)DBNull.Value : MaMHTienQuyet)
                     };
 
-                    db.ExecuteStoredProcedureNonQuery("sp_ThemMonHoc", parameters);
-
-                    // 3. Nếu có học kỳ và thời gian, có thể tạo LopHocPhan nếu cần
-                    if (HocKy.HasValue && ThoiGianBatDau.HasValue)
-                    {
-                        string checkHKQuery = "SELECT COUNT(*) FROM HocKy WHERE MaHK = @MaHK";
-                        SqlParameter[] checkHKParams = new SqlParameter[]
-                        {
-                            new SqlParameter("@MaHK", "HK" + HocKy.Value)
-                        };
-
-                        int hkExists = Convert.ToInt32(db.ExecuteScalar(checkHKQuery, checkHKParams));
-
-                        if (hkExists > 0)
-                        {
-                            string lhpQuery = @"INSERT INTO LopHocPhan (MaLHP, MaMH, MaHK)
-                                             VALUES (@MaLHP, @MaMH, @MaHK)";
-
-                            string maLHP = monHoc.MaMH + "_" + HocKy.Value;
-
-                            SqlParameter[] lhpParams = new SqlParameter[]
-                            {
-                                new SqlParameter("@MaLHP", maLHP),
-                                new SqlParameter("@MaMH", monHoc.MaMH),
-                                new SqlParameter("@MaHK", "HK" + HocKy.Value)
-                            };
-
-                            db.ExecuteNonQuery(lhpQuery, lhpParams);
-                        }
-                    }
+                    db.ExecuteStoredProcedureNonQuery("sp_ThemMonHoc_VoiKhoa", parameters);
 
                     TempData["SuccessMessage"] = "Thêm môn học thành công!";
                     return RedirectToAction("Index");
@@ -138,7 +130,7 @@ namespace QuanLySinhVien.Controllers
                 {
                     if (ex.Number == 2812)
                     {
-                        ModelState.AddModelError("", "Lỗi: Stored procedure 'sp_ThemMonHoc' chưa được tạo trong database.");
+                        ModelState.AddModelError("", "Lỗi: Stored procedure 'sp_ThemMonHoc_VoiKhoa' chưa được tạo trong database.");
                     }
                     else if (ex.Number == 50000)
                     {
@@ -155,6 +147,7 @@ namespace QuanLySinhVien.Controllers
                 }
             }
 
+            LoadDanhSachMonHoc();
             return View(monHoc);
         }
 
@@ -222,7 +215,7 @@ namespace QuanLySinhVien.Controllers
             string query = "SELECT * FROM MonHoc WHERE MaMH = @MaMH";
             SqlParameter[] parameters = new SqlParameter[]
             {
-                new SqlParameter("@MaMH", id)
+        new SqlParameter("@MaMH", id)
             };
 
             DataTable dt = db.ExecuteQuery(query, parameters);
@@ -237,9 +230,11 @@ namespace QuanLySinhVien.Controllers
             {
                 MaMH = row["MaMH"].ToString(),
                 TenMH = row["TenMH"].ToString(),
-                SoTinChi = Convert.ToInt32(row["SoTinChi"])
+                SoTinChi = Convert.ToInt32(row["SoTinChi"]),
+                MaKhoa = row["MaKhoa"] != DBNull.Value ? row["MaKhoa"].ToString() : ""
             };
 
+            LoadDanhSachKhoa();
             return View(monHoc);
         }
 
@@ -252,32 +247,26 @@ namespace QuanLySinhVien.Controllers
             {
                 try
                 {
-                    // Sử dụng stored procedure sp_CapNhatMonHoc
+                    string query = @"UPDATE MonHoc 
+                           SET TenMH = @TenMH, 
+                               SoTinChi = @SoTinChi,
+                               MaKhoa = @MaKhoa
+                           WHERE MaMH = @MaMH";
+
                     SqlParameter[] parameters = new SqlParameter[]
                     {
-                        new SqlParameter("@MaMH", monHoc.MaMH),
-                        new SqlParameter("@TenMH", monHoc.TenMH),
-                        new SqlParameter("@SoTinChi", monHoc.SoTinChi)
+                new SqlParameter("@MaMH", monHoc.MaMH),
+                new SqlParameter("@TenMH", monHoc.TenMH),
+                new SqlParameter("@SoTinChi", monHoc.SoTinChi),
+                new SqlParameter("@MaKhoa", (object)monHoc.MaKhoa ?? DBNull.Value)
                     };
 
-                    db.ExecuteStoredProcedureNonQuery("sp_CapNhatMonHoc", parameters);
+                    int result = db.ExecuteNonQuery(query, parameters);
 
-                    TempData["SuccessMessage"] = "Cập nhật môn học thành công!";
-                    return RedirectToAction("Index");
-                }
-                catch (SqlException ex)
-                {
-                    if (ex.Number == 2812)
+                    if (result > 0)
                     {
-                        ModelState.AddModelError("", "Lỗi: Stored procedure 'sp_CapNhatMonHoc' chưa được tạo trong database.");
-                    }
-                    else if (ex.Number == 50000)
-                    {
-                        ModelState.AddModelError("", ex.Message);
-                    }
-                    else
-                    {
-                        ModelState.AddModelError("", "Lỗi SQL: " + ex.Message);
+                        TempData["SuccessMessage"] = "Cập nhật môn học thành công!";
+                        return RedirectToAction("Index");
                     }
                 }
                 catch (Exception ex)
@@ -286,9 +275,9 @@ namespace QuanLySinhVien.Controllers
                 }
             }
 
+            LoadDanhSachKhoa();
             return View(monHoc);
         }
-
         // GET: MonHoc/Delete/5
         public ActionResult Delete(string id)
         {
@@ -407,7 +396,25 @@ namespace QuanLySinhVien.Controllers
 
             return RedirectToAction("Index");
         }
+        private void LoadDanhSachKhoa()
+        {
+            string query = "SELECT MaKhoa, TenKhoa FROM Khoa ORDER BY TenKhoa";
+            DataTable dt = db.ExecuteQuery(query);
 
+            List<SelectListItem> danhSachKhoa = new List<SelectListItem>();
+            danhSachKhoa.Add(new SelectListItem { Value = "", Text = "-- Chọn khoa --" });
+
+            foreach (DataRow row in dt.Rows)
+            {
+                danhSachKhoa.Add(new SelectListItem
+                {
+                    Value = row["MaKhoa"].ToString(),
+                    Text = row["TenKhoa"].ToString()
+                });
+            }
+
+            ViewBag.DanhSachKhoa = danhSachKhoa;
+        }
         // Helper method to load danh sách môn học cho dropdown
         private void LoadDanhSachMonHoc()
         {

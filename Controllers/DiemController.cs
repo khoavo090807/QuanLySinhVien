@@ -216,7 +216,7 @@ namespace QuanLySinhVien.Controllers
                     INNER JOIN LopHocPhan lhp ON dk.MaLHP = lhp.MaLHP
                     INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
                     WHERE dk.MaSV = @MaSV
-                      AND dk.DiemTongKet IS NULL
+                      AND (dk.DiemChuyenCan IS NULL OR dk.DiemGiuaKy IS NULL OR dk.DiemCuoiKy IS NULL)
                     ORDER BY mh.TenMH";
 
                 SqlParameter[] parameters = new SqlParameter[]
@@ -279,7 +279,7 @@ namespace QuanLySinhVien.Controllers
                     SELECT DISTINCT dk.MaLHP 
                     FROM DangKyHocPhan dk
                     WHERE dk.MaSV = @MaSV
-                      AND dk.DiemTongKet IS NULL";
+                      AND (dk.DiemChuyenCan IS NULL OR dk.DiemGiuaKy IS NULL OR dk.DiemCuoiKy IS NULL)";
 
                 SqlParameter[] getMonParams = new SqlParameter[]
                 {

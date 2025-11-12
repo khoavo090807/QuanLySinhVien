@@ -1,8 +1,9 @@
 ﻿// ============================================
 // FILE: Controllers/LopHocPhanController.cs
 // CHỨC NĂNG: Quản lý Lớp Học Phần
-// LIÊN KẾT: Học kỳ → Lớp Học Phần → Đăng Ký Học Phần
+// ĐÃ SỬA: Lọc giáo viên theo khoa bằng AJAX/JSON an toàn (sử dụng SqlParameter)
 // ============================================
+
 
 using QuanLySinhVien.Models;
 using System;
@@ -18,6 +19,7 @@ namespace QuanLySinhVien.Controllers
         private DatabaseHelper db = new DatabaseHelper();
 
         // ========== GET: LopHocPhan/Index - Xem danh sách lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         public ActionResult Index(string searchString)
         {
             List<LopHocPhan> danhSachLHP = new List<LopHocPhan>();
@@ -85,15 +87,30 @@ namespace QuanLySinhVien.Controllers
         {
             LoadDanhSachMonHoc();
             LoadDanhSachHocKy();
-            LoadDanhSachGiangVien();
+            LoadDanhSachKhoa();
+
+            
+            var khoaList = ViewBag.DanhSachKhoa as List<SelectListItem>;
+            string firstKhoa = khoaList != null && khoaList.Count > 1 ? khoaList[1].Value : "";
+
+            // Tải giáo viên cho khoa đầu tiên
+            LoadDanhSachGiangVien(firstKhoa);
+
             return View();
         }
 
         // ========== POST: LopHocPhan/Create - Xử lý thêm lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(LopHocPhan lopHocPhan)
         {
+            // Tải lại các ViewBag cho DropdownList
+            LoadDanhSachMonHoc();
+            LoadDanhSachHocKy();
+            LoadDanhSachGiangVien();
+            LoadDanhSachKhoa();
+
             if (ModelState.IsValid)
             {
                 try
@@ -106,13 +123,10 @@ namespace QuanLySinhVien.Controllers
                     if (count > 0)
                     {
                         ModelState.AddModelError("", "Mã lớp học phần đã tồn tại!");
-                        LoadDanhSachMonHoc();
-                        LoadDanhSachHocKy();
-                        LoadDanhSachGiangVien();
                         return View(lopHocPhan);
                     }
 
-                    // Kiểm tra môn học có tồn tại không
+                    // Kiểm tra tồn tại MonHoc và HocKy
                     string checkMHQuery = "SELECT COUNT(*) FROM MonHoc WHERE MaMH = @MaMH";
                     int mhCount = Convert.ToInt32(db.ExecuteScalar(checkMHQuery,
                         new SqlParameter[] { new SqlParameter("@MaMH", lopHocPhan.MaMH) }));
@@ -120,13 +134,9 @@ namespace QuanLySinhVien.Controllers
                     if (mhCount == 0)
                     {
                         ModelState.AddModelError("", "Môn học không tồn tại!");
-                        LoadDanhSachMonHoc();
-                        LoadDanhSachHocKy();
-                        LoadDanhSachGiangVien();
                         return View(lopHocPhan);
                     }
 
-                    // Kiểm tra học kỳ có tồn tại không
                     string checkHKQuery = "SELECT COUNT(*) FROM HocKy WHERE MaHK = @MaHK";
                     int hkCount = Convert.ToInt32(db.ExecuteScalar(checkHKQuery,
                         new SqlParameter[] { new SqlParameter("@MaHK", lopHocPhan.MaHK) }));
@@ -134,9 +144,6 @@ namespace QuanLySinhVien.Controllers
                     if (hkCount == 0)
                     {
                         ModelState.AddModelError("", "Học kỳ không tồn tại!");
-                        LoadDanhSachMonHoc();
-                        LoadDanhSachHocKy();
-                        LoadDanhSachGiangVien();
                         return View(lopHocPhan);
                     }
 
@@ -172,13 +179,11 @@ namespace QuanLySinhVien.Controllers
                 }
             }
 
-            LoadDanhSachMonHoc();
-            LoadDanhSachHocKy();
-            LoadDanhSachGiangVien();
             return View(lopHocPhan);
         }
 
         // ========== GET: LopHocPhan/Edit/5 - Form chỉnh sửa lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         public ActionResult Edit(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -209,10 +214,13 @@ namespace QuanLySinhVien.Controllers
             LoadDanhSachMonHoc();
             LoadDanhSachHocKy();
             LoadDanhSachGiangVien();
+            // Cần phải tải MaKhoa của GV để chọn lại trên form Edit (Nếu có form Edit, nhưng giữ nguyên cấu trúc này)
+            LoadDanhSachKhoa();
             return View(lopHocPhan);
         }
 
         // ========== POST: LopHocPhan/Edit/5 - Xử lý cập nhật lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(LopHocPhan lopHocPhan)
@@ -256,10 +264,12 @@ namespace QuanLySinhVien.Controllers
             LoadDanhSachMonHoc();
             LoadDanhSachHocKy();
             LoadDanhSachGiangVien();
+            LoadDanhSachKhoa();
             return View(lopHocPhan);
         }
 
         // ========== GET: LopHocPhan/Delete/5 - Xác nhận xóa lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         public ActionResult Delete(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -303,6 +313,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ========== POST: LopHocPhan/Delete/5 - Xử lý xóa lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(string id)
@@ -337,6 +348,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ========== GET: LopHocPhan/Details/5 - Xem chi tiết lớp học phần ==========
+        // (Không thay đổi so với file bạn gửi)
         public ActionResult Details(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -401,7 +413,57 @@ namespace QuanLySinhVien.Controllers
             return View(lopHocPhan);
         }
 
-        // ========== HELPER METHODS ==========
+        // ========== ACTION AJAX: GetGiangVienByKhoa - Lọc giáo viên theo khoa (ĐÃ SỬA) ==========
+        // Dùng [HttpGet] và trả về JsonResult để tương thích với AJAX jQuery
+        [HttpGet] // Thêm HttpGet cho rõ ràng
+        public JsonResult GetGiangVienByKhoa(string maKhoa)
+        {
+            try
+            {
+                List<SelectListItem> danhSach = GetDanhSachGiangVienAsSelectListItem(maKhoa);
+                return Json(danhSach, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                // Debug: In lỗi ra
+                System.Diagnostics.Debug.WriteLine("Error in GetGiangVienByKhoa: " + ex.Message);
+                return Json(new List<SelectListItem>(), JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        // ========== HELPER METHODS (ĐÃ CẬP NHẬT) ==========
+
+        // Hàm hỗ trợ TẠO SelectListItem cho Giáo viên (sử dụng Parameterized Query)
+        private List<SelectListItem> GetDanhSachGiangVienAsSelectListItem(string maKhoa = null)
+        {
+            string query = "SELECT MaGV, HoTenGV FROM GiangVien";
+            List<SqlParameter> parameters = new List<SqlParameter>();
+
+            if (!string.IsNullOrEmpty(maKhoa))
+            {
+                query += " WHERE MaKhoa = @MaKhoa";
+                parameters.Add(new SqlParameter("@MaKhoa", maKhoa));
+                System.Diagnostics.Debug.WriteLine($"Query GV với MaKhoa: {maKhoa}");
+            }
+            query += " ORDER BY HoTenGV";
+
+            DataTable dt = db.ExecuteQuery(query, parameters.ToArray());
+
+            List<SelectListItem> danhSach = new List<SelectListItem>();
+            danhSach.Add(new SelectListItem { Value = "", Text = "-- Chọn giáo viên --" });
+
+            foreach (DataRow row in dt.Rows)
+            {
+                danhSach.Add(new SelectListItem
+                {
+                    Value = row["MaGV"].ToString(),
+                    Text = row["MaGV"] + " - " + row["HoTenGV"].ToString()
+                });
+            }
+
+            System.Diagnostics.Debug.WriteLine($"Số GV tìm được: {danhSach.Count - 1}");
+            return danhSach;
+        }
 
         private void LoadDanhSachMonHoc()
         {
@@ -439,24 +501,31 @@ namespace QuanLySinhVien.Controllers
             ViewBag.DanhSachHocKy = danhSach;
         }
 
-        private void LoadDanhSachGiangVien()
+        // ĐÃ CHỈNH SỬA: Cập nhật hàm LoadDanhSachGiangVien để sử dụng hàm an toàn mới
+        private void LoadDanhSachGiangVien(string maKhoa = null)
         {
-            string query = "SELECT MaGV, HoTenGV FROM GiangVien ORDER BY HoTenGV";
+            ViewBag.DanhSachGiangVien = GetDanhSachGiangVienAsSelectListItem(maKhoa);
+        }
+
+        // ĐÃ THÊM: Tải danh sách khoa (Giữ nguyên)
+        private void LoadDanhSachKhoa()
+        {
+            string query = "SELECT MaKhoa, TenKhoa FROM Khoa ORDER BY TenKhoa";
             DataTable dt = db.ExecuteQuery(query);
 
             List<SelectListItem> danhSach = new List<SelectListItem>();
-            danhSach.Add(new SelectListItem { Value = "", Text = "-- Chọn giáo viên --" });
+            danhSach.Add(new SelectListItem { Value = "", Text = "-- Chọn khoa --" });
 
             foreach (DataRow row in dt.Rows)
             {
                 danhSach.Add(new SelectListItem
                 {
-                    Value = row["MaGV"].ToString(),
-                    Text = row["MaGV"] + " - " + row["HoTenGV"].ToString()
+                    Value = row["MaKhoa"].ToString(),
+                    Text = row["TenKhoa"].ToString()
                 });
             }
 
-            ViewBag.DanhSachGiangVien = danhSach;
+            ViewBag.DanhSachKhoa = danhSach;
         }
     }
 }

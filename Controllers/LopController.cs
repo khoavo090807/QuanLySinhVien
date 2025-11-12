@@ -13,16 +13,17 @@ namespace QuanLySinhVien.Controllers
         private DatabaseHelper db = new DatabaseHelper();
 
         // GET: Lop
+        // GET: Lop
         public ActionResult Index(string searchString)
         {
             List<Lop> danhSachLop = new List<Lop>();
 
             string query = @"SELECT l.MaLop, l.TenLop, l.SiSo, l.MaKhoa, l.MaHeDT,
-                            k.TenKhoa, h.TenHeDT
-                            FROM Lop l
-                            LEFT JOIN Khoa k ON l.MaKhoa = k.MaKhoa
-                            LEFT JOIN HeDaoTao h ON l.MaHeDT = h.MaHeDT
-                            WHERE 1=1";
+                    k.TenKhoa, h.TenHeDT
+                    FROM Lop l
+                    LEFT JOIN Khoa k ON l.MaKhoa = k.MaKhoa
+                    LEFT JOIN HeDaoTao h ON l.MaHeDT = h.MaHeDT
+                    WHERE 1=1";
 
             SqlParameter[] parameters = null;
 
@@ -31,11 +32,11 @@ namespace QuanLySinhVien.Controllers
                 query += " AND (l.MaLop LIKE @Search OR l.TenLop LIKE @Search OR k.TenKhoa LIKE @Search OR h.TenHeDT LIKE @Search)";
                 parameters = new SqlParameter[]
                 {
-                    new SqlParameter("@Search", "%" + searchString + "%")
+            new SqlParameter("@Search", "%" + searchString + "%")
                 };
             }
 
-            query += " ORDER BY  l.MaLop";
+            query += " ORDER BY l.MaKhoa, l.MaLop";
 
             DataTable dt = db.ExecuteQuery(query, parameters);
 
@@ -50,8 +51,6 @@ namespace QuanLySinhVien.Controllers
                     MaHeDT = row["MaHeDT"].ToString(),
                     TenKhoa = row["TenKhoa"].ToString(),
                     TenHeDT = row["TenHeDT"].ToString()
-
-
                 };
                 danhSachLop.Add(lop);
             }

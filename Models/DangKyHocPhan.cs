@@ -37,6 +37,7 @@ namespace QuanLySinhVien.Models
         public string HoTenSV { get; set; }
         public string TenMH { get; set; }
         public string TenHK { get; set; }
+        public string TenKhoa { get; set; }
     }
 
     

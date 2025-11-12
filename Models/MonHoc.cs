@@ -21,5 +21,12 @@ namespace QuanLySinhVien.Models
         [Required(ErrorMessage = "Số tín chỉ không được để trống")]
         [Range(1, 10, ErrorMessage = "Số tín chỉ phải từ 1 đến 10")]
         public int SoTinChi { get; set; }
+
+        [Display(Name = "Mã khoa")]
+        [Required(ErrorMessage = "Vui lòng chọn khoa")]
+        public string MaKhoa { get; set; }
+
+        // Navigation property
+        public string TenKhoa { get; set; }
     }
 }

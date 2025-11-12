@@ -29,13 +29,15 @@ CREATE TABLE Khoa (
     SoDienThoai VARCHAR(15)
 )
 
+
 -- Bảng 3: ChucVu
 CREATE TABLE ChucVu (
     MaChucVu NVARCHAR(10) PRIMARY KEY,
     TenChucVu NVARCHAR(100) NOT NULL
 )
 
--- Bảng 4: GiangVien
+
+
 CREATE TABLE GiangVien (
     MaGV NVARCHAR(10) PRIMARY KEY,
     HoTenGV NVARCHAR(100) NOT NULL,
@@ -83,6 +85,11 @@ CREATE TABLE MonHoc (
     SoTinChi INT NOT NULL CHECK (SoTinChi > 0)
 )
 
+ALTER TABLE MonHoc
+ADD MaKhoa NVARCHAR(10) NULL;
+ALTER TABLE MonHoc
+ADD CONSTRAINT FK_MonHoc_Khoa 
+FOREIGN KEY (MaKhoa) REFERENCES Khoa(MaKhoa);
 CREATE TABLE HocKy (
     MaHK NVARCHAR(10) PRIMARY KEY,
     TenHK NVARCHAR(50) NOT NULL,
@@ -149,7 +156,96 @@ INSERT INTO Khoa (MaKhoa, TenKhoa, SoDienThoai) VALUES
 (N'NN', N'Ngoại ngữ', '028555666'),
 (N'DL', N'Du lịch & Lữ hành', '028777888'),
 (N'CK', N'Cơ khí', '028999888')
+-- 3. Cập nhật dữ liệu mẫu (gán môn học vào khoa CNTT)
+UPDATE MonHoc SET MaKhoa = N'CNTT' WHERE MaMH IN (N'CSDL', N'HDT', N'LTW', N'MMT', N'BLOCKCHAIN', N'IOT', N'AI');
 
+-- 4. Cập nhật dữ liệu mẫu (gán môn học vào khoa QTKD)
+UPDATE MonHoc SET MaKhoa = N'QTKD' WHERE MaMH IN (N'MKT', N'KTCB');
+
+-- 5. Cập nhật dữ liệu mẫu (gán môn học vào khoa NN)
+UPDATE MonHoc SET MaKhoa = N'NN' WHERE MaMH IN (N'TA-C1');
+
+-- 6. Cập nhật dữ liệu mẫu (gán môn học vào khoa DL)
+UPDATE MonHoc SET MaKhoa = N'DL' WHERE MaMH IN (N'QTLH');
+CREATE PROCEDURE sp_ThemMonHoc_VoiKhoa
+    @MaMH NVARCHAR(10),
+    @TenMH NVARCHAR(100),
+    @SoTinChi INT,
+    @MaKhoa NVARCHAR(10),
+    @MaMHTienQuyet NVARCHAR(10) = NULL
+AS
+BEGIN
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Kiểm tra mã môn học đã tồn tại
+        IF EXISTS (SELECT 1 FROM MonHoc WHERE MaMH = @MaMH)
+            RAISERROR(N'Mã môn học [%s] đã tồn tại.', 16, 1, @MaMH);
+        
+        -- Kiểm tra số tín chỉ hợp lệ
+        IF @SoTinChi < 1 OR @SoTinChi > 6
+            RAISERROR(N'Số tín chỉ phải từ 1-6.', 16, 1);
+        
+        -- Kiểm tra tên môn học không rỗng
+        IF @TenMH IS NULL OR LTRIM(RTRIM(@TenMH)) = ''
+            RAISERROR(N'Tên môn học không được để trống.', 16, 1);
+        
+        -- Kiểm tra khoa có tồn tại
+        IF NOT EXISTS (SELECT 1 FROM Khoa WHERE MaKhoa = @MaKhoa)
+            RAISERROR(N'Khoa [%s] không tồn tại.', 16, 1, @MaKhoa);
+        
+        -- Kiểm tra môn tiên quyết có tồn tại hay không
+        IF @MaMHTienQuyet IS NOT NULL AND NOT EXISTS (SELECT 1 FROM MonHoc WHERE MaMH = @MaMHTienQuyet)
+            RAISERROR(N'Môn tiên quyết [%s] không tồn tại.', 16, 1, @MaMHTienQuyet);
+        
+        -- Thêm môn học vào bảng MonHoc (với MaKhoa)
+        INSERT INTO MonHoc (MaMH, TenMH, SoTinChi, MaKhoa) 
+        VALUES (@MaMH, @TenMH, @SoTinChi, @MaKhoa);
+        
+        -- Thêm môn tiên quyết nếu có
+        IF @MaMHTienQuyet IS NOT NULL
+            INSERT INTO MonHoc_TienQuyet (MaMH_Chinh, MaMH_TienQuyet) 
+            VALUES (@MaMH, @MaMHTienQuyet);
+        
+        COMMIT TRANSACTION;
+        PRINT N'Thêm môn học [' + @MaMH + N'] cho Khoa [' + @MaKhoa + N'] thành công!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- ============================================================
+-- SP: sp_KiemTraKhoaSinhVien - Kiểm tra khoa sinh viên
+-- ============================================================
+CREATE PROCEDURE sp_KiemTraKhoaSinhVien
+    @MaSV NVARCHAR(10)
+AS
+BEGIN
+    SELECT l.MaKhoa
+    FROM SinhVien sv
+    INNER JOIN Lop l ON sv.MaLop = l.MaLop
+    WHERE sv.MaSV = @MaSV
+END
+GO
+
+-- ============================================================
+-- SP: sp_LayKhoaMonHoc - Lấy khoa của một môn học
+-- ============================================================
+CREATE PROCEDURE sp_LayKhoaMonHoc
+    @MaLHP NVARCHAR(10)
+AS
+BEGIN
+    SELECT mh.MaKhoa
+    FROM LopHocPhan lhp
+    INNER JOIN MonHoc mh ON lhp.MaMH = mh.MaMH
+    WHERE lhp.MaLHP = @MaLHP
+END
+GO
+-- 7. Xem kết quả
+SELECT MaMH, TenMH, MaKhoa FROM MonHoc;
+-- Bảng 4: GiangVien
 -- 3. ChucVu
 INSERT INTO ChucVu (MaChucVu, TenChucVu) VALUES
 (N'GV', N'Giảng viên'),
@@ -1526,9 +1622,8 @@ VALUES
 ('2001130001', '2001130001', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'khoavo090807@gmail.com', 'Student', 1, GETDATE());
 INSERT INTO Account (MaTaiKhoan, TenDangNhap, MatKhau, Email, LoaiTaiKhoan, TrangThai, NgayTao)
 VALUES 
-(N'ACC001', N'admin', N'8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', N'admin@huit.edu.vn', N'Admin', 1, GETDATE()),
-(N'ACC002', N'baotv', N'5e884898da28047151d0e56f8dc62927593d815b266dd1c23d936a6b151f4f2a', N'baotv@huit.edu.vn', N'Lecturer', 1, GETDATE()),
-(N'ACC003', N'annv', N'5e884898da28047151d0e56f8dc62927593d815b266dd1c23d936a6b151f4f2a', N'annv@huit.edu.vn', N'Student', 1, GETDATE());
+('2001140001', '2001140001', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'khoavo09080706@gmail.com', 'Student', 1, GETDATE());
+
 
 -- Tạo Stored Procedure: Lấy danh sách tài khoản
 CREATE PROCEDURE sp_LayDanhSachAccount

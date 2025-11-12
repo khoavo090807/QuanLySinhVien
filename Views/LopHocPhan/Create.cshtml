@@ -31,7 +31,9 @@
                         @Html.ValidationMessageFor(model => model.MaLHP, "", new { @class = "text-danger" })
                     </div>
                 </div>
+            </div>
 
+            <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
                         @Html.LabelFor(model => model.MaMH, new { @class = "form-label" })
@@ -43,9 +45,7 @@
                         @Html.ValidationMessageFor(model => model.MaMH, "", new { @class = "text-danger" })
                     </div>
                 </div>
-            </div>
 
-            <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
                         @Html.LabelFor(model => model.MaHK, new { @class = "form-label" })
@@ -57,17 +57,25 @@
                         @Html.ValidationMessageFor(model => model.MaHK, "", new { @class = "text-danger" })
                     </div>
                 </div>
+            </div>
 
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="MaKhoa" class="form-label">Khoa</label>
+                        <span class="text-danger">*</span>
+                        @Html.DropDownList("MaKhoa", ViewBag.DanhSachKhoa as List<SelectListItem>, new { @class = "form-control" })
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         @Html.LabelFor(model => model.MaGV, new { @class = "form-label" })
-                        @Html.DropDownListFor(model => model.MaGV,
-                            (IEnumerable<SelectListItem>)ViewBag.DanhSachGiangVien,
-                            new { @class = "form-select" })
+                        <span class="text-danger">*</span>
+                        @Html.DropDownListFor(model => model.MaGV, ViewBag.DanhSachGiangVien as List<SelectListItem>, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(model => model.MaGV, "", new { @class = "text-danger" })
                     </div>
                 </div>
             </div>
-
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
@@ -81,7 +89,7 @@
                         @Html.LabelFor(model => model.SoLuongToiDa, new { @class = "form-label" })
                         <span class="text-danger">*</span>
                         @Html.TextBoxFor(model => model.SoLuongToiDa,
-                            new { @class = "form-control", type = "number", min = "1", max = "100", placeholder = "VD: 40" })
+                        new { @class = "form-control", type = "number", min = "1", max = "100", placeholder = "VD: 40" })
                         @Html.ValidationMessageFor(model => model.SoLuongToiDa, "", new { @class = "text-danger" })
                     </div>
                 </div>
@@ -99,9 +107,84 @@
                     <i class="fas fa-arrow-left"></i> Quay lại
                 </a>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Lưu
+                    <i class="fas fa-save"></i> Thêm mới lớp học phần
                 </button>
             </div>
         }
     </div>
 </div>
+
+@section scripts {
+    <!-- ✅ FIX: Thêm jQuery trước tiên -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Validation scripts -->
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            console.log("Script đã load, jQuery version: " + $.fn.jquery);
+
+            var maKhoaDropdown = $('#MaKhoa');
+            var maGVDropdown = $('#MaGV');
+
+            // Hàm xử lý tải giáo viên
+            function loadGiangVien(maKhoa) {
+                console.log("=== Tải giáo viên cho khoa: " + maKhoa + " ===");
+
+                maGVDropdown.empty();
+                maGVDropdown.append($('<option></option>').val('').text('-- Đang tải giáo viên... --'));
+
+                if (maKhoa && maKhoa.trim() !== '') {
+                    $.ajax({
+                        url: '@Url.Action("GetGiangVienByKhoa", "LopHocPhan")',
+                        type: 'GET',
+                        data: { maKhoa: maKhoa },
+                        dataType: 'json',
+                        success: function (data) {
+                            console.log("✓ Nhận được " + data.length + " giáo viên");
+                            maGVDropdown.empty();
+
+                            if (data && data.length > 0) {
+                                $.each(data, function (i, gv) {
+                                    console.log("  - " + gv.Value + ": " + gv.Text);
+                                    maGVDropdown.append($('<option></option>').val(gv.Value).text(gv.Text));
+                                });
+                            } else {
+                                console.warn("⚠ Không có giáo viên nào");
+                                maGVDropdown.append($('<option></option>').val('').text('-- Không có giáo viên --'));
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("✗ Lỗi AJAX:");
+                            console.error("  Status: " + status);
+                            console.error("  Error: " + error);
+                            console.error("  Response: " + xhr.responseText);
+                            maGVDropdown.empty();
+                            maGVDropdown.append($('<option></option>').val('').text('-- Lỗi tải giáo viên --'));
+                        }
+                    });
+                } else {
+                    console.log("Không chọn khoa");
+                    maGVDropdown.empty();
+                    maGVDropdown.append($('<option></option>').val('').text('-- Chọn giáo viên --'));
+                }
+            }
+
+            // Tải khi form load lần đầu
+            var initialMaKhoa = maKhoaDropdown.val();
+            console.log("Khoa ban đầu: " + initialMaKhoa);
+            if (initialMaKhoa && initialMaKhoa.trim() !== '') {
+                loadGiangVien(initialMaKhoa);
+            }
+
+            // Bắt sự kiện change dropdown khoa
+            maKhoaDropdown.on('change', function () {
+                var maKhoa = $(this).val();
+                console.log(">>> Người dùng chọn khoa: " + maKhoa);
+                loadGiangVien(maKhoa);
+            });
+        });
+    </script>
+}

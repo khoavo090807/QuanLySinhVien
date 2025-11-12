@@ -160,67 +160,81 @@
             <!-- Sidebar -->
             <div class="col-md-2 px-0 sidebar">
                 <nav class="nav flex-column">
-                    <a class="nav-link" href="@Url.Action("Index", "Home")">
-                        <i class="fas fa-home"></i> Trang chủ
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "SinhVien")">
-                        <i class="fas fa-user-graduate"></i> Sinh viên
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "Lop")">
-                        <i class="fas fa-users"></i> Lớp học
-                    </a>
-
-                    <a class="nav-link" href="@Url.Action("Index", "GiangVien")">
-                        <i class="fas fa-chalkboard-user"></i> Giáo viên
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "Khoa")">
-                        <i class="fas fa-chalkboard-user"></i> Khoa
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "HocKy")">
-                        <i class="fas fa-calendar-alt"></i> Học kỳ
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "MonHoc")">
-                        <i class="fas fa-book"></i> Môn học
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "LopHocPhan")">
-                        <i class="fas fa-th-list"></i> Lớp Học Phần
-                    </a>
-                    <a class="nav-link" href="@Url.Action("Index", "DangKyHocPhan")">
-                        <i class="fas fa-clipboard-list"></i> Đăng ký học phần
-                    </a>
-
-                    <hr style="border-color: rgba(255,255,255,0.2);">
-
                     @if (Request.IsAuthenticated && User.IsInRole("Admin"))
-                    {
-                        <a class="nav-link" href="@Url.Action("ThongKeHocKy", "Home")">
-                            <i class="fas fa-chart-bar"></i> Thống Kê
+                    {<a class="nav-link" href="@Url.Action("Index", "Home")">
+                            <i class="fas fa-home"></i> Trang chủ
+                        </a>}
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {<a class="nav-link" href="@Url.Action("Index", "SinhVien")">
+                                <i class="fas fa-user-graduate"></i> Sinh viên
+                            </a>}
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {<a class="nav-link" href="@Url.Action("Index", "Lop")">
+                                <i class="fas fa-users"></i> Lớp học
+                            </a>}
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <a class="nav-link" href="@Url.Action("Index", "GiangVien")">
+                                <i class="fas fa-chalkboard-user"></i> Giáo viên
+                            </a>}
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {<a class="nav-link" href="@Url.Action("Index", "Khoa")">
+                                <i class="fas fa-chalkboard-user"></i> Khoa
+                            </a>}
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {<a class="nav-link" href="@Url.Action("Index", "HocKy")">
+                                <i class="fas fa-calendar-alt"></i> Học kỳ
+                            </a>}
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <a class="nav-link" href="@Url.Action("Index", "MonHoc")">
+                                <i class="fas fa-book"></i> Môn học
+                            </a>
+                        }
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <a class="nav-link" href="@Url.Action("Index", "LopHocPhan")">
+                                <i class="fas fa-th-list"></i> Lớp Học Phần
+                            </a>}
+
+                        <a class="nav-link" href="@Url.Action("Index", "DangKyHocPhan")">
+                            <i class="fas fa-clipboard-list"></i> Đăng ký học phần
                         </a>
 
-                    }
 
 
-                    <a class="nav-link" href="@Url.Action("XemDiem", "Diem")">
-                        <i class="fas fa-chart-line"></i> Xem Điểm
-                    </a>
-                    @if (Request.IsAuthenticated && User.IsInRole("Admin"))
-                    {
-                        <a class="nav-link" href="@Url.Action("BangDiemLop", "Diem")">
-                            <i class="fas fa-table"></i> Bảng Điểm
+                        <hr style="border-color: rgba(255,255,255,0.2);">
+
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <a class="nav-link" href="@Url.Action("ThongKeHocKy", "Home")">
+                                <i class="fas fa-chart-bar"></i> Thống Kê
+                            </a>
+
+                        }
+
+
+                        <a class="nav-link" href="@Url.Action("XemDiem", "Diem")">
+                            <i class="fas fa-chart-line"></i> Xem Điểm
                         </a>
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <a class="nav-link" href="@Url.Action("BangDiemLop", "Diem")">
+                                <i class="fas fa-table"></i> Bảng Điểm
+                            </a>
 
-                    }
+                        }
 
-                    @if (Request.IsAuthenticated && User.IsInRole("Admin"))
-                    {
-                        <a class="nav-link" href="@Url.Action("NhapDiem", "Diem")">
-                            <i class="fas fa-pencil-alt"></i> Nhập Điểm
-                        </a>
+                        @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                        {
+                            <a class="nav-link" href="@Url.Action("NhapDiem", "Diem")">
+                                <i class="fas fa-pencil-alt"></i> Nhập Điểm
+                            </a>
 
-                    }
+                        }
 
 
-                </nav>
+                    </nav>
             </div>
 
             <!-- Main Content -->

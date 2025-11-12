@@ -1,11 +1,12 @@
-﻿@{
+﻿@model IEnumerable<QuanLySinhVien.Models.DangKyHocPhan>
+@{
     ViewBag.Title = "Đăng ký học phần";
 }
 
 <div class="row mb-4">
     <div class="col-12">
         <h2 class="page-title">
-            <i class="fas fa-edit"></i> Đăng ký học phần cho sinh viên
+            <i class="fas fa-edit"></i> Đăng ký học phần
         </h2>
     </div>
 </div>
@@ -21,31 +22,50 @@
 
             <div class="alert alert-info" role="alert">
                 <i class="fas fa-info-circle"></i>
-                <strong>Hướng dẫn:</strong> Chọn sinh viên và lớp học phần muốn đăng ký.
-                Hệ thống sẽ tự động kiểm tra điều kiện tiên quyết.
+                <strong>Hướng dẫn:</strong>
+                @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                {
+                    <text>Chọn sinh viên và lớp học phần.</text>
+                }
+                else
+                {
+                    <text>Chọn lớp học phần bạn muốn đăng ký.</text>
+                }
+                Hệ thống sẽ tự động kiểm tra điều kiện.
             </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Sinh viên <span class="text-danger">*</span></label>
-                        @Html.DropDownList("MaSV",
-                            (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
-                            "-- Chọn sinh viên --",
-                            new { @class = "form-select", required = "required" })
+            if (Request.IsAuthenticated && User.IsInRole("Admin"))
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Sinh viên <span class="text-danger">*</span></label>
+                            @Html.DropDownList("MaSV", (IEnumerable<SelectListItem>)ViewBag.DanhSachSinhVien,
+                                "-- Chọn sinh viên --", new { @class = "form-select", required = "required" })
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Lớp học phần <span class="text-danger">*</span></label>
+                            @Html.DropDownList("MaLHP", (IEnumerable<SelectListItem>)ViewBag.DanhSachLopHocPhan,
+                                "-- Chọn lớp học phần --", new { @class = "form-select", required = "required" })
+                        </div>
                     </div>
                 </div>
-
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label">Lớp học phần <span class="text-danger">*</span></label>
-                        @Html.DropDownList("MaLHP",
-                            (IEnumerable<SelectListItem>)ViewBag.DanhSachLopHocPhan,
-                            "-- Chọn lớp học phần --",
-                            new { @class = "form-select", required = "required" })
+            }
+            else
+            {
+                <input type="hidden" name="MaSV" value="@ViewBag.MaSV" />
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Lớp học phần <span class="text-danger">*</span></label>
+                            @Html.DropDownList("MaLHP", (IEnumerable<SelectListItem>)ViewBag.DanhSachLopHocPhan,
+                                "-- Chọn lớp học phần --", new { @class = "form-select", required = "required" })
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <div class="alert alert-warning" role="alert">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -58,7 +78,6 @@
             </div>
 
             <hr />
-
             <div class="text-end">
                 <a href="@Url.Action("Index")" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Quay lại
@@ -73,8 +92,7 @@
 
 @section scripts {
     <script>
-        // Tự động ẩn thông báo sau 5 giây
-        setTimeout(function() {
+        setTimeout(function () {
             $('.alert-success, .alert-danger').fadeOut('slow');
         }, 5000);
     </script>

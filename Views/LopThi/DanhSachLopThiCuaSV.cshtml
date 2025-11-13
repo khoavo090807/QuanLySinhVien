@@ -1,0 +1,207 @@
+﻿@using System.Dynamic
+@{
+    ViewBag.Title = "Danh Sách Bài Thi";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-file-alt"></i> Danh Sách Bài Thi Của Tôi
+        </h2>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["InfoMessage"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fas fa-info-circle"></i> @TempData["InfoMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@{
+    var model = Model as List<dynamic>;
+}
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list"></i> Các bài thi của bạn
+    </div>
+    <div class="card-body">
+        @if (model != null && model.Count > 0)
+        {
+            <div class="row">
+                @foreach (dynamic item in model)
+                {
+                    bool daThamGia = item.DaThamGia;
+                    DateTime ngayThi = item.NgayThi;
+                    bool coDuKien = ngayThi <= DateTime.Now;
+                    string statusBadge = "";
+                    string statusText = "";
+                    string btnClass = "";
+                    bool canTake = false;
+
+                    if (daThamGia)
+                    {
+                        statusBadge = "success";
+                        statusText = "Đã làm";
+                        btnClass = "btn-info";
+                        canTake = false;
+                    }
+                    else if (!coDuKien)
+                    {
+                        statusBadge = "warning";
+                        statusText = "Sắp diễn ra";
+                        btnClass = "btn-secondary";
+                        canTake = false;
+                    }
+                    else
+                    {
+                        statusBadge = "primary";
+                        statusText = "Có thể làm";
+                        btnClass = "btn-success";
+                        canTake = true;
+                    }
+
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-book"></i> @item.TenDeThi
+                                </h6>
+                            </div>
+
+                            <div class="card-body">
+                                <table class="table table-sm table-borderless">
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Lớp thi:</strong></td>
+                                            <td>@item.TenLopThi</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Ngày thi:</strong></td>
+                                            <td>@item.NgayThi.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Phòng:</strong></td>
+                                            <td>@item.PhongThi</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Thời gian:</strong></td>
+                                            <td>@item.ThoiGianLamBai phút</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Giáo viên:</strong></td>
+                                            <td>@item.TenGiangVien</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                @if (daThamGia)
+                                {
+                                    <div class="alert alert-success alert-sm p-2">
+                                        <small>
+                                            <i class="fas fa-trophy"></i> Điểm: <strong>@item.DiemTong?.ToString("0.00")</strong>
+                                        </small><br />
+                                        <small>
+                                            <i class="fas fa-medal"></i> Xếp loại: <strong>@item.XepLoai</strong>
+                                        </small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning alert-sm p-2">
+                                        <small><i class="fas fa-clock"></i> Bạn chưa làm bài thi này</small>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="card-footer bg-light">
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    @if (canTake)
+                                    {
+                                        <a href="@Url.Action("LamBai", new { id = item.MaLopThi })"
+                                           class="btn @btnClass" title="Làm bài thi">
+                                            <i class="fas fa-pencil-alt"></i> Làm bài
+                                        </a>
+                                    }
+                                    else if (daThamGia)
+                                    {
+                                        <a href="@Url.Action("KetQua", new { maLopThi = item.MaLopThi, maSV = User.Identity.Name })"
+                                           class="btn @btnClass" title="Xem kết quả">
+                                            <i class="fas fa-eye"></i> Xem kết quả
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-secondary" disabled title="Bài thi chưa khả dụng">
+                                            <i class="fas fa-lock"></i> Không khả dụng
+                                        </button>
+                                    }
+                                </div>
+
+                                <p class="text-center mt-2 mb-0">
+                                    <span class="badge bg-@statusBadge">@statusText</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info text-center" role="alert">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p class="mb-0">Bạn không có bài thi nào</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .hover-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+        }
+
+    .table-sm td {
+        padding: 0.4rem;
+        vertical-align: middle;
+        font-size: 0.875rem;
+    }
+
+    .alert-sm {
+        margin-bottom: 0;
+        font-size: 0.85rem;
+    }
+
+    .btn-group-sm > .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.875rem;
+    }
+
+    .badge {
+        padding: 0.4rem 0.6rem;
+    }
+</style>

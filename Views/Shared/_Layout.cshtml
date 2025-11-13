@@ -239,12 +239,18 @@
                         </a>
 
                     }
-                    
+                    @if (Request.IsAuthenticated && User.IsInRole("Admin"))
+                    {
                         <a class="nav-link" href="@Url.Action("Index", "LopThi")">
                             <i class="fas fa-pencil-alt"></i> Lớp Thi
+                        </a>}
+                    @if (Request.IsAuthenticated && !User.IsInRole("Admin"))
+                    {
+                        <a class="nav-link" href="@Url.Action("DanhSachLopThiCuaSV", "LopThi")">
+                            <i class="fas fa-pencil-alt"></i> Lớp Thi
                         </a>
+                    }
 
-                    
 
 
                 </nav>

@@ -1,119 +1,164 @@
 ﻿@model QuanLySinhVien.Models.BaiThiViewModel
-
 @{
     ViewBag.Title = "Làm Bài Thi";
 }
 
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h5>
-                    <i class="fas fa-exam"></i> @Model.TenDeThi
-                    <span class="float-end">
-                        <span class="badge bg-primary">Câu: @Model.TongCau</span>
-                        <span class="badge bg-info">Thời gian: @Model.ThoiGianLamBai phút</span>
-                    </span>
-                </h5>
-                <div id="countdown" class="mt-2" style="font-size: 18px; color: red;">
-                    <i class="fas fa-hourglass-end"></i> Thời gian còn lại: <strong id="timeLeft">@Model.ThoiGianLamBai:00</strong>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Phần Đề Thi -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fa fa-file-pdf"></i> @Model.TenDeThi</h5>
+                </div>
+                <div class="card-body">
+                    <form id="formNopBai" method="post" action="@Url.Action("NopBai")">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="maLopThi" value="@Model.MaLopThi" />
+                        <input type="hidden" name="maDT" value="@Model.MaDT" />
+
+                        @if (Model.DanhSachCau != null && Model.DanhSachCau.Count > 0)
+                        {
+                            foreach (var cau in Model.DanhSachCau)
+                            {
+                                <div class="card mb-3 border-info">
+                                    <div class="card-header bg-light">
+                                        <strong>Câu @cau.ThuTu (@cau.Diem điểm)</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>@cau.NoiDung</p>
+
+                                        <div class="form-check">
+                                            <input class="form-check-input dapAn" type="radio"
+                                                   name="dapAn[@cau.MaCau]" value="A"
+                                                   id="cauA@(cau.MaCau)" />
+                                            <label class="form-check-label" for="cauA@(cau.MaCau)">
+                                                <strong>A.</strong> @cau.DapAnA
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check">
+                                            <input class="form-check-input dapAn" type="radio"
+                                                   name="dapAn[@cau.MaCau]" value="B"
+                                                   id="cauB@(cau.MaCau)" />
+                                            <label class="form-check-label" for="cauB@(cau.MaCau)">
+                                                <strong>B.</strong> @cau.DapAnB
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check">
+                                            <input class="form-check-input dapAn" type="radio"
+                                                   name="dapAn[@cau.MaCau]" value="C"
+                                                   id="cauC@(cau.MaCau)" />
+                                            <label class="form-check-label" for="cauC@(cau.MaCau)">
+                                                <strong>C.</strong> @cau.DapAnC
+                                            </label>
+                                        </div>
+
+                                        <div class="form-check">
+                                            <input class="form-check-input dapAn" type="radio"
+                                                   name="dapAn[@cau.MaCau]" value="D"
+                                                   id="cauD@(cau.MaCau)" />
+                                            <label class="form-check-label" for="cauD@(cau.MaCau)">
+                                                <strong>D.</strong> @cau.DapAnD
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-success btn-lg" id="btnNopBai">
+                                    <i class="fa fa-check"></i> Nộp Bài
+                                </button>
+                                <a href="@Url.Action("DanhSachLopThiCuaSV")" class="btn btn-secondary btn-lg">
+                                    <i class="fa fa-times"></i> Thoát
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phần Thông Tin & Bộ Đếm Thời Gian -->
+        <div class="col-md-3">
+            <div class="card mb-3 bg-light">
+                <div class="card-header bg-warning text-dark">
+                    <h6><i class="fa fa-clock"></i> Thời Gian Còn Lại</h6>
+                </div>
+                <div class="card-body text-center">
+                    <h3 id="timeRemaining" class="text-danger">
+                        <strong>@Model.ThoiGianLamBai:00</strong>
+                    </h3>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6><i class="fa fa-info-circle"></i> Thông Tin Bài Thi</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Tổng câu:</strong> @Model.TongCau</p>
+                    <p><strong>Thời gian:</strong> @Model.ThoiGianLamBai phút</p>
+                    <p id="answered"><strong>Đã trả lời:</strong> <span class="badge bg-primary">0</span></p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6><i class="fa fa-list"></i> Danh Sách Câu</h6>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    @for (int i = 0; i < Model.DanhSachCau.Count; i++)
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input chuaTL" type="checkbox"
+                                   id="question@(i)" data-question="@(i)" />
+                            <label class="form-check-label" for="question@(i)">
+                                Câu @(i + 1)
+                            </label>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@using (Html.BeginForm("NopBai", "LopThi", FormMethod.Post, new { id = "formBaiThi" }))
-{
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="maLopThi" value="@Model.MaLopThi" />
-    <input type="hidden" name="maDT" value="@Model.MaDT" />
-
-    <div class="row">
-        @for (int i = 0; i < Model.DanhSachCau.Count; i++)
-        {
-            var cau = Model.DanhSachCau[i];
-            <div class="col-12 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        <strong>Câu @cau.ThuTu</strong>
-                        <span class="float-end badge bg-success">@cau.Diem điểm</span>
-                    </div>
-                    <div class="card-body">
-                        <p>@cau.NoiDung</p>
-
-                        <div class="mb-2">
-                            <label class="form-check">
-                                <input type="radio" name="dapAn[@cau.MaCau]" value="A" class="form-check-input" />
-                                <span class="form-check-label"><strong>A.</strong> @cau.DapAnA</span>
-                            </label>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-check">
-                                <input type="radio" name="dapAn[@cau.MaCau]" value="B" class="form-check-input" />
-                                <span class="form-check-label"><strong>B.</strong> @cau.DapAnB</span>
-                            </label>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-check">
-                                <input type="radio" name="dapAn[@cau.MaCau]" value="C" class="form-check-input" />
-                                <span class="form-check-label"><strong>C.</strong> @cau.DapAnC</span>
-                            </label>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-check">
-                                <input type="radio" name="dapAn[@cau.MaCau]" value="D" class="form-check-input" />
-                                <span class="form-check-label"><strong>D.</strong> @cau.DapAnD</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-
-    <div class="text-center mt-4">
-        <button type="submit" class="btn btn-lg btn-success" id="btnNopBai">
-            <i class="fas fa-check"></i> Nộp Bài Thi
-        </button>
-    </div>
-}
-
 <script>
-    // Countdown timer
-    let timeLeft = @Model.ThoiGianLamBai * 60;
+    // Bộ đếm thời gian
+    let thoiGian = @Model.ThoiGianLamBai * 60; // Đổi sang giây
+    const timerElement = document.getElementById('timeRemaining');
 
-    setInterval(function () {
-        timeLeft--;
+    const timerInterval = setInterval(() => {
+        thoiGian--;
+        const phut = Math.floor(thoiGian / 60);
+        const giay = thoiGian % 60;
 
-        let minutes = Math.floor(timeLeft / 60);
-        let seconds = timeLeft % 60;
+        timerElement.textContent =
+            (phut < 10 ? '0' : '') + phut + ':' +
+            (giay < 10 ? '0' : '') + giay;
 
-        document.getElementById('timeLeft').textContent =
-            (minutes < 10 ? '0' : '') + minutes + ':' +
-            (seconds < 10 ? '0' : '') + seconds;
-
-        if (timeLeft <= 0) {
-            document.getElementById('formBaiThi').submit();
-        }
-
-        // Đổi màu khi còn 5 phút
-        if (timeLeft <= 300) {
-            document.getElementById('countdown').style.color = 'orange';
-        }
-
-        // Đổi màu khi còn 1 phút
-        if (timeLeft <= 60) {
-            document.getElementById('countdown').style.color = 'red';
+        if (thoiGian <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('formNopBai').submit();
         }
     }, 1000);
 
-    // Confirm before submit
-    document.getElementById('btnNopBai').addEventListener('click', function (e) {
-        if (!confirm('Bạn có chắc chắn muốn nộp bài? Bạn sẽ không thể chỉnh sửa sau đó!')) {
+    // Đếm số câu đã trả lời
+    document.querySelectorAll('.dapAn').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const answered = document.querySelectorAll('.dapAn:checked').length;
+            document.querySelector('#answered span').textContent = answered;
+        });
+    });
+
+    // Xác nhận nộp bài
+    document.getElementById('formNopBai').addEventListener('submit', (e) => {
+        if (!confirm('Bạn chắc chắn muốn nộp bài?')) {
             e.preventDefault();
         }
     });

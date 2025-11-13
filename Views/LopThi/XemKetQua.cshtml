@@ -1,0 +1,66 @@
+﻿@{
+    ViewBag.Title = "Kết Quả Bài Thi";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h4><i class="fa fa-check-circle"></i> Kết Quả Bài Thi</h4>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <h3>@ViewBag.TenLopThi</h3>
+                    <p class="text-muted">@ViewBag.TenDeThi</p>
+                </div>
+                <div class="col-md-6">
+                    <h1 class="text-primary">@ViewBag.DiemTong</h1>
+                    <p><strong>Xếp loại:</strong> <span class="badge bg-info">@ViewBag.XepLoai</span></p>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6>Thời gian làm bài</h6>
+                            <p class="fs-5">@ViewBag.ThoiGianLamBai</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6>Thời gian bắt đầu</h6>
+                            <p class="fs-6">@ViewBag.ThoiGianBatDau</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6>Thời gian kết thúc</h6>
+                            <p class="fs-6">@ViewBag.ThoiGianKetThuc</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6>Trạng thái</h6>
+                            <p><span class="badge bg-success">Hoàn thành</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="@Url.Action("DanhSachLopThiCuaSV")" class="btn btn-primary">
+                    <i class="fa fa-arrow-left"></i> Quay Lại
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

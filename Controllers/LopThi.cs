@@ -13,7 +13,7 @@ namespace QuanLySinhVien.Controllers
         private DatabaseHelper db = new DatabaseHelper();
 
         // ============================================
-        // GET: LopThi/Index - Danh sách lớp thi
+        // GET: LopThi/Index - Admin danh sách lớp thi
         // ============================================
         [Authorize(Roles = "Admin")]
         public ActionResult Index(string searchString, string trangThai)
@@ -90,7 +90,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // GET: LopThi/Create - Form tạo lớp thi
+        // GET: LopThi/Create - Form tạo lớp thi (Admin)
         // ============================================
         [Authorize(Roles = "Admin")]
         public ActionResult Create()
@@ -102,7 +102,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // POST: LopThi/Create - Xử lý tạo lớp thi
+        // POST: LopThi/Create - Xử lý tạo lớp thi (Admin)
         // ============================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -141,7 +141,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // GET: LopThi/Details/{id}
+        // GET: LopThi/Details/{id} - Chi tiết lớp thi (Admin)
         // ============================================
         [Authorize(Roles = "Admin")]
         public ActionResult Details(string id)
@@ -204,7 +204,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // GET: LopThi/DanhSachSinhVien/{id}
+        // GET: LopThi/DanhSachSinhVien/{id} - Admin xem danh sách SV (Admin)
         // ============================================
         [Authorize(Roles = "Admin")]
         public ActionResult DanhSachSinhVien(string id)
@@ -264,9 +264,76 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
+        // GET: LopThi/DanhSachLopThiCuaSV - Xem lớp thi cho sinh viên
+        // ============================================
+        [Authorize(Roles = "Student")]
+        public ActionResult DanhSachLopThiCuaSV()
+        {
+            var danhSach = new List<dynamic>();
+            string maSV = User.Identity.Name;
+
+            string query = @"
+                SELECT 
+                    lt.MaLopThi,
+                    lt.MaDT,
+                    dt.TenDT,
+                    lt.TenLopThi,
+                    lt.NgayThi,
+                    lt.PhongThi,
+                    lt.SoLuong,
+                    lt.TrangThai,
+                    k.TenKhoa,
+                    ISNULL(gv.HoTenGV, N'N/A') AS TenGiangVien,
+                    ISNULL(dt.ThoiGianLamBai, 0) AS ThoiGianLamBai,
+                    ISNULL(kq.DiemTong, 0) AS DiemTong,
+                    ISNULL(kq.XepLoai, N'---') AS XepLoai,
+                    ISNULL(kq.DaThamGia, 0) AS DaThamGia
+                FROM ChiTietLopThi ct
+                INNER JOIN LopThi lt ON ct.MaLopThi = lt.MaLopThi
+                INNER JOIN DeThi dt ON lt.MaDT = dt.MaDT
+                INNER JOIN Khoa k ON dt.MaKhoa = k.MaKhoa
+                LEFT JOIN GiangVien gv ON lt.MaGV = gv.MaGV
+                LEFT JOIN KetQuaThi kq ON ct.MaLopThi = kq.MaLopThi AND ct.MaSV = kq.MaSV
+                WHERE ct.MaSV = @MaSV
+                ORDER BY lt.NgayThi DESC";
+
+            try
+            {
+                DataTable dt_result = db.ExecuteQuery(query,
+                    new SqlParameter[] { new SqlParameter("@MaSV", maSV) });
+
+                foreach (DataRow row in dt_result.Rows)
+                {
+                    dynamic item = new System.Dynamic.ExpandoObject();
+                    item.MaLopThi = row["MaLopThi"] != DBNull.Value ? row["MaLopThi"].ToString() : "";
+                    item.MaDT = row["MaDT"] != DBNull.Value ? row["MaDT"].ToString() : "";
+                    item.TenDeThi = row["TenDT"] != DBNull.Value ? row["TenDT"].ToString() : "";
+                    item.TenLopThi = row["TenLopThi"] != DBNull.Value ? row["TenLopThi"].ToString() : "";
+                    item.NgayThi = row["NgayThi"] != DBNull.Value ? Convert.ToDateTime(row["NgayThi"]) : DateTime.Now;
+                    item.PhongThi = row["PhongThi"] != DBNull.Value ? row["PhongThi"].ToString() : "";
+                    item.TenKhoa = row["TenKhoa"] != DBNull.Value ? row["TenKhoa"].ToString() : "";
+                    item.TenGiangVien = row["TenGiangVien"] != DBNull.Value ? row["TenGiangVien"].ToString() : "N/A";
+                    item.ThoiGianLamBai = row["ThoiGianLamBai"] != DBNull.Value ? Convert.ToInt32(row["ThoiGianLamBai"]) : 0;
+                    item.TrangThai = row["TrangThai"] != DBNull.Value ? row["TrangThai"].ToString() : "Chưa thi";
+                    item.DiemTong = row["DiemTong"] != DBNull.Value ? Convert.ToSingle(row["DiemTong"]) : (float?)null;
+                    item.XepLoai = row["XepLoai"] != DBNull.Value ? row["XepLoai"].ToString() : "---";
+                    item.DaThamGia = Convert.ToBoolean(row["DaThamGia"]);
+
+                    danhSach.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Lỗi tải danh sách: " + ex.Message;
+            }
+
+            return View(danhSach);
+        }
+
+        // ============================================
         // GET: LopThi/LamBai/{id} - Sinh viên làm bài thi
         // ============================================
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "Student")]
         public ActionResult LamBai(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -274,6 +341,41 @@ namespace QuanLySinhVien.Controllers
 
             try
             {
+                string maSV = User.Identity.Name;
+
+                // Kiểm tra xem sinh viên có trong lớp thi này không
+                string checkQuery = @"
+                    SELECT COUNT(*) 
+                    FROM ChiTietLopThi 
+                    WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV";
+
+                int count = Convert.ToInt32(db.ExecuteScalar(checkQuery, new SqlParameter[]
+                {
+                    new SqlParameter("@MaLopThi", id),
+                    new SqlParameter("@MaSV", maSV)
+                }));
+
+                if (count == 0)
+                    return HttpNotFound("Bạn không có quyền làm bài thi này");
+
+                // Kiểm tra xem đã làm rồi hay chưa
+                string checkResultQuery = @"
+                    SELECT DaThamGia 
+                    FROM KetQuaThi 
+                    WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV";
+
+                DataTable dtCheck = db.ExecuteQuery(checkResultQuery, new SqlParameter[]
+                {
+                    new SqlParameter("@MaLopThi", id),
+                    new SqlParameter("@MaSV", maSV)
+                });
+
+                if (dtCheck.Rows.Count > 0 && Convert.ToBoolean(dtCheck.Rows[0]["DaThamGia"]))
+                {
+                    TempData["InfoMessage"] = "Bạn đã làm bài thi này rồi. Không thể làm lại.";
+                    return RedirectToAction("DanhSachLopThiCuaSV");
+                }
+
                 // Lấy thông tin lớp thi
                 string queryLopThi = @"
                     SELECT lt.MaLopThi, lt.MaDT, dt.TenDT, ISNULL(dt.ThoiGianLamBai, 0) AS ThoiGianLamBai
@@ -335,14 +437,14 @@ namespace QuanLySinhVien.Controllers
                     });
                 }
 
-                // Cập nhật thời gian bắt đầu
+                // Cập nhật thời gian bắt đầu nếu chưa tồn tại
                 string updateQuery = @"
                     UPDATE KetQuaThi
                     SET ThoiGianBatDau = GETDATE(),
                         TrangThai = N'Đang làm'
-                    WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV";
+                    WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV 
+                    AND (ThoiGianBatDau IS NULL OR TrangThai IS NULL)";
 
-                string maSV = User.Identity.Name;
                 db.ExecuteNonQuery(updateQuery, new SqlParameter[]
                 {
                     new SqlParameter("@MaLopThi", id),
@@ -354,7 +456,7 @@ namespace QuanLySinhVien.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = "Lỗi: " + ex.Message;
-                return RedirectToAction("Index");
+                return RedirectToAction("DanhSachLopThiCuaSV");
             }
         }
 
@@ -363,7 +465,7 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "Student")]
         public ActionResult NopBai(string maLopThi, string maDT, FormCollection formCollection)
         {
             try
@@ -380,15 +482,15 @@ namespace QuanLySinhVien.Controllers
                 DataTable dtCau = db.ExecuteQuery(queryCau,
                     new SqlParameter[] { new SqlParameter("@MaDT", maDT) });
 
-                int diemDung = 0;
-                int tongDiem = 0;
+                float diemDung = 0;
+                float tongDiem = 0;
 
                 // Duyệt qua tất cả câu hỏi
                 foreach (DataRow row in dtCau.Rows)
                 {
                     int maCau = Convert.ToInt32(row["MaCau"]);
                     string dapAnDung = row["DapAnDung"].ToString();
-                    int diem = Convert.ToInt32(row["Diem"]);
+                    float diem = Convert.ToSingle(row["Diem"]);
 
                     // Lấy đáp án sinh viên chọn
                     string keyForm = "dapAn[" + maCau + "]";
@@ -418,16 +520,33 @@ namespace QuanLySinhVien.Controllers
                     });
                 }
 
-                // Tính điểm tự động
-                SqlParameter[] paramsTinhDiem = new SqlParameter[]
+                // Tính điểm và xếp loại
+                float diemTongKet = tongDiem > 0 ? (diemDung / tongDiem) * 10 : 0;
+                string xepLoai = "Kém";
+                if (diemTongKet >= 8.5) xepLoai = "Giỏi";
+                else if (diemTongKet >= 7.0) xepLoai = "Khá";
+                else if (diemTongKet >= 5.5) xepLoai = "Trung bình";
+                else if (diemTongKet >= 4.0) xepLoai = "Yếu";
+
+                // Cập nhật kết quả thi
+                string updateQuery = @"
+                    UPDATE KetQuaThi
+                    SET DiemTong = @DiemTong,
+                        XepLoai = @XepLoai,
+                        ThoiGianKetThuc = GETDATE(),
+                        TrangThai = N'Đã nộp',
+                        DaThamGia = 1
+                    WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV";
+
+                db.ExecuteNonQuery(updateQuery, new SqlParameter[]
                 {
                     new SqlParameter("@MaLopThi", maLopThi),
-                    new SqlParameter("@MaSV", maSV)
-                };
+                    new SqlParameter("@MaSV", maSV),
+                    new SqlParameter("@DiemTong", diemTongKet),
+                    new SqlParameter("@XepLoai", xepLoai)
+                });
 
-                db.ExecuteStoredProcedureNonQuery("sp_TinhDiemTuDong", paramsTinhDiem);
-
-                TempData["SuccessMessage"] = "Nộp bài thành công! Kết quả đã được tính toán.";
+                TempData["SuccessMessage"] = "Nộp bài thành công! Kết quả của bạn đã được lưu.";
                 return RedirectToAction("KetQua", new { maLopThi = maLopThi, maSV = maSV });
             }
             catch (Exception ex)
@@ -440,10 +559,15 @@ namespace QuanLySinhVien.Controllers
         // ============================================
         // GET: LopThi/KetQua - Xem kết quả thi
         // ============================================
+        [Authorize(Roles = "Student")]
         public ActionResult KetQua(string maLopThi, string maSV)
         {
             try
             {
+                // Kiểm tra xem sinh viên xem được kết quả của mình không
+                if (maSV != User.Identity.Name)
+                    return HttpNotFound("Bạn không có quyền xem kết quả này");
+
                 string query = @"
                     SELECT 
                         kq.ID,
@@ -491,7 +615,7 @@ namespace QuanLySinhVien.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = "Lỗi: " + ex.Message;
-                return RedirectToAction("Index");
+                return RedirectToAction("DanhSachLopThiCuaSV");
             }
         }
 
@@ -526,7 +650,6 @@ namespace QuanLySinhVien.Controllers
             catch (Exception ex)
             {
                 ViewBag.DanhSachDeThi = new List<SelectListItem>();
-                TempData["ErrorMessage"] = "Lỗi tải danh sách đề thi: " + ex.Message;
             }
         }
 
@@ -558,7 +681,6 @@ namespace QuanLySinhVien.Controllers
             catch (Exception ex)
             {
                 ViewBag.DanhSachGiangVien = new List<SelectListItem>();
-                TempData["ErrorMessage"] = "Lỗi tải danh sách giảng viên: " + ex.Message;
             }
         }
     }

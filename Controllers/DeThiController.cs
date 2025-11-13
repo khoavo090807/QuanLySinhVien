@@ -23,7 +23,7 @@ namespace QuanLySinhVien.Controllers
             string query = @"
                 SELECT dt.MaDT, dt.TenDT, dt.MoTa, dt.MaKhoa, k.TenKhoa, 
                        dt.SoCau, dt.ThoiGianLamBai, dt.TrangThai, dt.NgayTao,
-                       (SELECT COUNT(*) FROM CauHoi WHERE MaDT = dt.MaDT) AS TongCau
+                       (SELECT COUNT(*) FROM CauHoiTracNghiem WHERE MaDT = dt.MaDT) AS TongCau
                 FROM DeThi dt
                 INNER JOIN Khoa k ON dt.MaKhoa = k.MaKhoa
                 WHERE 1=1";
@@ -93,8 +93,8 @@ namespace QuanLySinhVien.Controllers
                     }
 
                     string query = @"
-                        INSERT INTO DeThi (MaDT, TenDT, MoTa, MaKhoa, ThoiGianLamBai, TrangThai, NgayTao)
-                        VALUES (@MaDT, @TenDT, @MoTa, @MaKhoa, @ThoiGianLamBai, @TrangThai, @NgayTao)";
+                        INSERT INTO DeThi (MaDT, TenDT, MoTa, MaKhoa, ThoiGianLamBai, TrangThai, NgayTao, SoCau)
+                        VALUES (@MaDT, @TenDT, @MoTa, @MaKhoa, @ThoiGianLamBai, @TrangThai, @NgayTao, 0)";
 
                     SqlParameter[] parameters = new SqlParameter[]
                     {
@@ -112,7 +112,7 @@ namespace QuanLySinhVien.Controllers
                     if (result > 0)
                     {
                         TempData["SuccessMessage"] = "Tạo đề thi thành công!";
-                        return RedirectToAction("Edit", new { id = deThi.MaDT });
+                        return RedirectToAction("Index", new { id = deThi.MaDT });
                     }
                 }
                 catch (Exception ex)
@@ -236,7 +236,14 @@ namespace QuanLySinhVien.Controllers
         {
             try
             {
-                db.ExecuteStoredProcedureNonQuery("sp_XoaDeThi",
+                // Xóa tất cả câu hỏi của đề thi trước
+                string deleteCauHoiQuery = "DELETE FROM CauHoiTracNghiem WHERE MaDT = @MaDT";
+                db.ExecuteNonQuery(deleteCauHoiQuery,
+                    new SqlParameter[] { new SqlParameter("@MaDT", id) });
+
+                // Sau đó xóa đề thi
+                string deleteDeThiQuery = "DELETE FROM DeThi WHERE MaDT = @MaDT";
+                db.ExecuteNonQuery(deleteDeThiQuery,
                     new SqlParameter[] { new SqlParameter("@MaDT", id) });
 
                 TempData["SuccessMessage"] = "Xóa đề thi thành công!";

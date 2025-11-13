@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using OfficeOpenXml;
@@ -64,7 +63,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // CREATE - Thêm câu hỏi đơn
+        // CREATE - Form thêm câu hỏi
         // ============================================
         public ActionResult Create(string maDT)
         {
@@ -76,6 +75,9 @@ namespace QuanLySinhVien.Controllers
             return View();
         }
 
+        // ============================================
+        // CREATE - POST: Thêm câu hỏi đơn
+        // ============================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(string maDT, CauHoi cauHoi)
@@ -126,7 +128,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // EDIT - Chỉnh sửa câu hỏi
+        // EDIT - Form chỉnh sửa câu hỏi
         // ============================================
         public ActionResult Edit(int id, string maDT)
         {
@@ -219,7 +221,7 @@ namespace QuanLySinhVien.Controllers
         }
 
         // ============================================
-        // IMPORT EXCEL - Import câu hỏi từ Excel
+        // IMPORT EXCEL - Form import câu hỏi từ Excel
         // ============================================
         public ActionResult ImportExcel(string maDT)
         {
@@ -231,6 +233,9 @@ namespace QuanLySinhVien.Controllers
             return View();
         }
 
+        // ============================================
+        // POST: Import Excel
+        // ============================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult ImportExcel(string maDT, HttpPostedFileBase fileExcel)
@@ -249,8 +254,7 @@ namespace QuanLySinhVien.Controllers
                     return RedirectToAction("ImportExcel", new { maDT = maDT });
                 }
 
-               ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
+                
 
                 using (ExcelPackage package = new ExcelPackage(fileExcel.InputStream))
                 {
@@ -265,6 +269,11 @@ namespace QuanLySinhVien.Controllers
                     int thuTu = (maxThuTu == DBNull.Value || maxThuTu == null ? 0 : Convert.ToInt32(maxThuTu));
 
                     // Duyệt từ hàng 2 (hàng 1 là header)
+                    // Format Excel: 
+                    // Cột 1: Nội dung câu hỏi
+                    // Cột 2: Loại câu (TN: Trắc nghiệm, TL: Tự luận)
+                    // Cột 3: Đáp án đúng (JSON hoặc text)
+                    // Cột 4: Điểm
                     for (int row = 2; row <= rowCount; row++)
                     {
                         string noiDung = worksheet.Cells[row, 1].Value?.ToString().Trim();

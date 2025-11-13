@@ -1914,6 +1914,7 @@ BEGIN
     END CATCH
 END
 GO
+drop PROCEDURE sp_XoaDeThi
 
 -- ============================================
 -- STORED PROCEDURE: Cập nhật số câu hỏi
@@ -1957,3 +1958,635 @@ IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS
 BEGIN
     ALTER TABLE DeThi ADD SoCau INT DEFAULT 0;
 END
+
+
+-- ============================================
+-- BẢNG: LopThi (Lớp Thi)
+-- ============================================
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'LopThi')
+BEGIN
+    CREATE TABLE LopThi (
+        MaLopThi NVARCHAR(10) PRIMARY KEY,
+        TenLopThi NVARCHAR(200) NOT NULL,
+        MaDT NVARCHAR(10) NOT NULL,
+        NgayThi DATETIME NOT NULL,
+        PhongThi NVARCHAR(50),
+        GhiChu NVARCHAR(500),
+        TrangThai NVARCHAR(20) DEFAULT N'Chưa thi',  -- Chưa thi, Đang thi, Đã thi
+        NgayTao DATETIME DEFAULT GETDATE(),
+        NgayCapNhat DATETIME,
+        
+        CONSTRAINT FK_LopThi_DeThi FOREIGN KEY (MaDT) REFERENCES DeThi(MaDT)
+    )
+END
+GO
+
+-- ============================================
+-- BẢNG: ChiTietLopThi (Chi Tiết Lớp Thi)
+-- ============================================
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ChiTietLopThi')
+BEGIN
+    CREATE TABLE ChiTietLopThi (
+        ID INT IDENTITY(1,1) PRIMARY KEY,
+        MaLopThi NVARCHAR(10) NOT NULL,
+        MaSV NVARCHAR(10) NOT NULL,
+        SoThuTu INT,
+        NgayPhanCong DATETIME DEFAULT GETDATE(),
+        TrangThai NVARCHAR(20) DEFAULT N'Chưa làm',  -- Chưa làm, Đang làm, Đã nộp
+        GhiChu NVARCHAR(255),
+        
+        CONSTRAINT FK_ChiTietLopThi_LopThi FOREIGN KEY (MaLopThi) REFERENCES LopThi(MaLopThi) ON DELETE CASCADE,
+        CONSTRAINT FK_ChiTietLopThi_SinhVien FOREIGN KEY (MaSV) REFERENCES SinhVien(MaSV),
+        CONSTRAINT UQ_ChiTietLopThi UNIQUE (MaLopThi, MaSV)
+    )
+END
+GO
+
+-- ============================================
+-- BẢNG: KetQuaThi (Kết Quả Thi)
+-- ============================================
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'KetQuaThi')
+BEGIN
+    CREATE TABLE KetQuaThi (
+        ID INT IDENTITY(1,1) PRIMARY KEY,
+        MaLopThi NVARCHAR(10) NOT NULL,
+        MaSV NVARCHAR(10) NOT NULL,
+        DiemTong FLOAT DEFAULT 0,
+        XepLoai NVARCHAR(50),  -- Giỏi, Khá, Trung bình, Yếu, Kém
+        ThoiGianLamBai INT DEFAULT 0,  -- Tính bằng phút
+        ThoiGianBatDau DATETIME,
+        ThoiGianKetThuc DATETIME,
+        DaThamGia BIT DEFAULT 0,
+        TrangThai NVARCHAR(20) DEFAULT N'Chưa làm',  -- Chưa làm, Đang làm, Đã nộp
+        NgayTao DATETIME DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_KetQuaThi_LopThi FOREIGN KEY (MaLopThi) REFERENCES LopThi(MaLopThi),
+        CONSTRAINT FK_KetQuaThi_SinhVien FOREIGN KEY (MaSV) REFERENCES SinhVien(MaSV),
+        CONSTRAINT UQ_KetQuaThi UNIQUE (MaLopThi, MaSV)
+    )
+END
+GO
+
+-- ============================================
+-- BẢNG: CauTraLoiSinhVien (Câu Trả Lời Của Sinh Viên)
+-- ============================================
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'CauTraLoiSinhVien')
+BEGIN
+    CREATE TABLE CauTraLoiSinhVien (
+        ID INT IDENTITY(1,1) PRIMARY KEY,
+        MaLopThi NVARCHAR(10) NOT NULL,
+        MaSV NVARCHAR(10) NOT NULL,
+        MaCau INT NOT NULL,
+        DapAnChon NVARCHAR(100),  -- Đáp án người dùng chọn
+        DiemCauNay FLOAT DEFAULT 0,  -- Điểm câu này
+        NgayTraLoi DATETIME DEFAULT GETDATE(),
+        
+        CONSTRAINT FK_CauTraLoi_LopThi FOREIGN KEY (MaLopThi) REFERENCES LopThi(MaLopThi),
+        CONSTRAINT FK_CauTraLoi_SinhVien FOREIGN KEY (MaSV) REFERENCES SinhVien(MaSV),
+        CONSTRAINT FK_CauTraLoi_CauHoi FOREIGN KEY (MaCau) REFERENCES CauHoiTracNghiem(MaCau)
+    )
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_LopThi_MaDT')
+    CREATE INDEX IDX_LopThi_MaDT ON LopThi(MaDT);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_LopThi_NgayThi')
+    CREATE INDEX IDX_LopThi_NgayThi ON LopThi(NgayThi);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_ChiTietLopThi_MaLopThi')
+    CREATE INDEX IDX_ChiTietLopThi_MaLopThi ON ChiTietLopThi(MaLopThi);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_ChiTietLopThi_MaSV')
+    CREATE INDEX IDX_ChiTietLopThi_MaSV ON ChiTietLopThi(MaSV);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_KetQuaThi_MaLopThi')
+    CREATE INDEX IDX_KetQuaThi_MaLopThi ON KetQuaThi(MaLopThi);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_KetQuaThi_MaSV')
+    CREATE INDEX IDX_KetQuaThi_MaSV ON KetQuaThi(MaSV);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_CauTraLoi_MaLopThi')
+    CREATE INDEX IDX_CauTraLoi_MaLopThi ON CauTraLoiSinhVien(MaLopThi);
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IDX_CauTraLoi_MaSV')
+    CREATE INDEX IDX_CauTraLoi_MaSV ON CauTraLoiSinhVien(MaSV);
+
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Tạo Lớp Thi
+-- ============================================
+CREATE PROCEDURE sp_TaoLopThi
+    @MaDT NVARCHAR(10),
+    @NgayThi DATETIME,
+    @PhongThi NVARCHAR(50),
+    @MaGV NVARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- 1. Kiểm tra đề thi có tồn tại
+        IF NOT EXISTS (SELECT 1 FROM DeThi WHERE MaDT = @MaDT)
+        BEGIN
+            RAISERROR(N'Đề thi không tồn tại!', 16, 1);
+        END
+        
+        -- 2. Lấy thông tin khoa của đề thi
+        DECLARE @MaKhoa NVARCHAR(10);
+        SELECT @MaKhoa = MaKhoa FROM DeThi WHERE MaDT = @MaDT;
+        
+        -- 3. Tạo mã lớp thi
+        DECLARE @MaLopThi NVARCHAR(15);
+        SET @MaLopThi = 'LT' + @MaDT + '_' + CONVERT(VARCHAR(8), GETDATE(), 112);
+        
+        -- 4. Kiểm tra mã lớp thi đã tồn tại chưa
+        WHILE EXISTS (SELECT 1 FROM LopThi WHERE MaLopThi = @MaLopThi)
+        BEGIN
+            SET @MaLopThi = @MaLopThi + '_1';
+        END
+        
+        -- 5. Tạo lớp thi
+        INSERT INTO LopThi (MaLopThi, MaDT, MaGV, TenLopThi, NgayThi, PhongThi)
+        VALUES (@MaLopThi, @MaDT, @MaGV, 
+                N'Lớp thi ' + @MaDT + ' - ' + CONVERT(VARCHAR(10), @NgayThi, 103),
+                @NgayThi, @PhongThi);
+        
+        -- 6. Lấy danh sách sinh viên của khoa, sắp xếp A-Z
+        DECLARE @SoLuong INT = 0;
+        
+        INSERT INTO ChiTietLopThi (MaLopThi, MaSV, SoThuTu)
+        SELECT 
+            @MaLopThi,
+            sv.MaSV,
+            ROW_NUMBER() OVER (ORDER BY sv.HoTenSV ASC) AS SoThuTu
+        FROM SinhVien sv
+        INNER JOIN Lop l ON sv.MaLop = l.MaLop
+        WHERE l.MaKhoa = @MaKhoa
+        ORDER BY sv.HoTenSV ASC;
+        
+        -- 7. Cập nhật số lượng
+        SET @SoLuong = (SELECT COUNT(*) FROM ChiTietLopThi WHERE MaLopThi = @MaLopThi);
+        UPDATE LopThi SET SoLuong = @SoLuong WHERE MaLopThi = @MaLopThi;
+        
+        -- 8. Tạo bản ghi kết quả thi cho mỗi sinh viên
+        INSERT INTO KetQuaThi (MaLopThi, MaSV)
+        SELECT @MaLopThi, MaSV FROM ChiTietLopThi WHERE MaLopThi = @MaLopThi;
+        
+        COMMIT TRANSACTION;
+        PRINT N'Tạo lớp thi thành công! Mã lớp: ' + @MaLopThi;
+        SELECT @MaLopThi AS MaLopThi;
+        
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Lấy Danh Sách Lớp Thi
+-- ============================================
+CREATE PROCEDURE sp_LayDanhSachLopThi
+    @MaKhoa NVARCHAR(10) = NULL,
+    @TrangThai NVARCHAR(20) = NULL
+AS
+BEGIN
+    SELECT 
+        lt.MaLopThi,
+        lt.MaDT,
+        dt.TenDT,
+        lt.TenLopThi,
+        lt.NgayThi,
+        lt.PhongThi,
+        lt.SoLuong,
+        lt.TrangThai,
+        k.TenKhoa,
+        gv.HoTenGV,
+        dt.ThoiGianLamBai,
+        (SELECT COUNT(*) FROM KetQuaThi WHERE MaLopThi = lt.MaLopThi AND DaThamGia = 1) AS SoDaTham
+    FROM LopThi lt
+    INNER JOIN DeThi dt ON lt.MaDT = dt.MaDT
+    INNER JOIN Khoa k ON dt.MaKhoa = k.MaKhoa
+    LEFT JOIN GiangVien gv ON lt.MaGV = gv.MaGV
+    WHERE 1=1
+        AND (dt.MaKhoa = @MaKhoa OR @MaKhoa IS NULL)
+        AND (lt.TrangThai = @TrangThai OR @TrangThai IS NULL)
+    ORDER BY lt.NgayThi DESC;
+END
+GO
+
+-- ============================================
+-- STORED PROCEDURE: Tính Điểm Tự Động
+-- ============================================
+CREATE PROCEDURE sp_TinhDiemTuDong
+    @MaLopThi NVARCHAR(15),
+    @MaSV NVARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        DECLARE @DiemTong FLOAT = 0;
+        DECLARE @TongDiem FLOAT = 0;
+        
+        -- 1. Tính tổng điểm từ câu trả lời đúng
+        SELECT @DiemTong = ISNULL(SUM(cht.DiemCauNay), 0)
+        FROM CauTraLoiSinhVien cht
+        WHERE cht.MaLopThi = @MaLopThi 
+            AND cht.MaSV = @MaSV
+            AND cht.DapAnChon IS NOT NULL;
+        
+        -- 2. Lấy tổng điểm toàn bộ đề thi
+        SELECT @TongDiem = ISNULL(SUM(Diem), 0)
+        FROM CauHoiTracNghiem
+        WHERE MaDT = (SELECT MaDT FROM LopThi WHERE MaLopThi = @MaLopThi);
+        
+        -- 3. Tính điểm 10
+        DECLARE @DiemFinish FLOAT = 0;
+        IF @TongDiem > 0
+            SET @DiemFinish = ROUND((@DiemTong / @TongDiem) * 10, 2);
+        
+        -- 4. Xếp loại
+        DECLARE @XepLoai NVARCHAR(20);
+        IF @DiemFinish >= 8.5 SET @XepLoai = N'Giỏi';
+        ELSE IF @DiemFinish >= 7.0 SET @XepLoai = N'Khá';
+        ELSE IF @DiemFinish >= 5.5 SET @XepLoai = N'Trung bình';
+        ELSE IF @DiemFinish >= 4.0 SET @XepLoai = N'Yếu';
+        ELSE SET @XepLoai = N'Kém';
+        
+        -- 5. Cập nhật kết quả thi
+        UPDATE KetQuaThi
+        SET DiemTong = @DiemFinish,
+            XepLoai = @XepLoai,
+            ThoiGianKetThuc = GETDATE(),
+            TrangThai = 'Hoàn thành',
+            DaThamGia = 1
+        WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV;
+        
+        COMMIT TRANSACTION;
+        PRINT N'Tính điểm thành công! Điểm: ' + CAST(@DiemFinish AS NVARCHAR);
+        
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+
+
+--------------------------
+CREATE PROCEDURE sp_LayKetQua_DanhSachKhoa
+    @MaKhoa NVARCHAR(10) = NULL
+AS
+BEGIN
+    SELECT 
+        kq.ID,
+        kq.MaLopThi,
+        kq.MaSV,
+        kq.DiemTong,
+        kq.XepLoai,
+        kq.ThoiGianLamBai,
+        kq.TrangThai,
+        sv.HoTenSV,
+        lt.TenLopThi,
+        dt.TenDT,
+        k.TenKhoa
+    FROM KetQuaThi kq
+    INNER JOIN SinhVien sv ON kq.MaSV = sv.MaSV
+    INNER JOIN LopThi lt ON kq.MaLopThi = lt.MaLopThi
+    INNER JOIN DeThi dt ON lt.MaDT = dt.MaDT
+    INNER JOIN Khoa k ON dt.MaKhoa = k.MaKhoa
+    LEFT JOIN Lop l ON sv.MaLop = l.MaLop
+    WHERE (k.MaKhoa = @MaKhoa OR @MaKhoa IS NULL)
+        AND kq.DaThamGia = 1
+    ORDER BY kq.DiemTong DESC, sv.HoTenSV ASC
+END
+GO
+
+-- ============================================
+-- SP: sp_ThongKe_DiemTheoXepLoai
+-- ============================================
+CREATE PROCEDURE sp_ThongKe_DiemTheoXepLoai
+    @MaLopThi NVARCHAR(15)
+AS
+BEGIN
+    SELECT 
+        XepLoai,
+        COUNT(*) AS SoLuong,
+        AVG(CAST(DiemTong AS FLOAT)) AS DiemTrungBinh
+    FROM KetQuaThi
+    WHERE MaLopThi = @MaLopThi 
+        AND DaThamGia = 1
+    GROUP BY XepLoai
+    ORDER BY 
+        CASE 
+            WHEN XepLoai = N'Giỏi' THEN 1
+            WHEN XepLoai = N'Khá' THEN 2
+            WHEN XepLoai = N'Trung bình' THEN 3
+            WHEN XepLoai = N'Yếu' THEN 4
+            WHEN XepLoai = N'Kém' THEN 5
+            ELSE 6
+        END
+END
+GO
+
+-- ============================================
+-- SP: sp_LayTopSinhVien
+-- ============================================
+CREATE PROCEDURE sp_LayTopSinhVien
+    @MaLopThi NVARCHAR(15),
+    @Top INT = 10
+AS
+BEGIN
+    SELECT TOP (@Top)
+        kq.MaSV,
+        sv.HoTenSV,
+        kq.DiemTong,
+        kq.XepLoai,
+        kq.ThoiGianLamBai,
+        ROW_NUMBER() OVER (ORDER BY kq.DiemTong DESC) AS HangXep
+    FROM KetQuaThi kq
+    INNER JOIN SinhVien sv ON kq.MaSV = sv.MaSV
+    WHERE kq.MaLopThi = @MaLopThi
+        AND kq.DaThamGia = 1
+    ORDER BY kq.DiemTong DESC, kq.ThoiGianLamBai ASC
+END
+GO
+
+-- ============================================
+-- SP: sp_XoaLopThi
+-- ============================================
+
+CREATE PROCEDURE sp_XoaLopThi
+    @MaLopThi NVARCHAR(15)
+AS
+BEGIN
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Kiểm tra lớp thi có tồn tại không
+        IF NOT EXISTS (SELECT 1 FROM LopThi WHERE MaLopThi = @MaLopThi)
+        BEGIN
+            RAISERROR(N'Lớp thi không tồn tại!', 16, 1);
+        END
+
+        -- Kiểm tra nếu đã có sinh viên tham gia
+        IF EXISTS (SELECT 1 FROM KetQuaThi WHERE MaLopThi = @MaLopThi AND DaThamGia = 1)
+        BEGIN
+            RAISERROR(N'Không thể xóa lớp thi. Đã có sinh viên tham gia bài thi!', 16, 1);
+        END
+
+        -- Xóa câu trả lời sinh viên
+        DELETE FROM CauTraLoiSinhVien WHERE MaLopThi = @MaLopThi;
+
+        -- Xóa kết quả thi
+        DELETE FROM KetQuaThi WHERE MaLopThi = @MaLopThi;
+
+        -- Xóa chi tiết lớp thi
+        DELETE FROM ChiTietLopThi WHERE MaLopThi = @MaLopThi;
+
+        -- Xóa lớp thi
+        DELETE FROM LopThi WHERE MaLopThi = @MaLopThi;
+
+        COMMIT TRANSACTION;
+        PRINT N'Xóa lớp thi thành công!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- ============================================
+-- SP: sp_CluaCapNhatTrangThaiLopThi
+-- ============================================
+CREATE PROCEDURE sp_CapNhatTrangThaiLopThi
+    @MaLopThi NVARCHAR(15),
+    @TrangThaiMoi NVARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Kiểm tra lớp thi có tồn tại không
+    IF NOT EXISTS (SELECT 1 FROM LopThi WHERE MaLopThi = @MaLopThi)
+    BEGIN
+        RAISERROR(N'Lớp thi không tồn tại!', 16, 1);
+        RETURN;
+    END
+
+    -- Kiểm tra trạng thái hợp lệ
+    IF @TrangThaiMoi NOT IN (N'Chưa thi', N'Đang thi', N'Đã thi')
+    BEGIN
+        RAISERROR(N'Trạng thái không hợp lệ!', 16, 1);
+        RETURN;
+    END
+
+    -- Cập nhật trạng thái
+    UPDATE LopThi
+    SET TrangThai = @TrangThaiMoi,
+        NgayCapNhat = GETDATE()
+    WHERE MaLopThi = @MaLopThi;
+
+    PRINT N'Cập nhật trạng thái lớp thi thành công!';
+END
+GO
+
+-- ============================================
+-- FUNCTION: fn_TinhDiemTrungBinhKhoa
+-- ============================================
+CREATE FUNCTION fn_TinhDiemTrungBinhKhoa
+(
+    @MaKhoa NVARCHAR(10)
+)
+RETURNS FLOAT
+AS
+BEGIN
+    DECLARE @DiemTB FLOAT;
+    
+    SELECT @DiemTB = AVG(kq.DiemTong)
+    FROM KetQuaThi kq
+    INNER JOIN LopThi lt ON kq.MaLopThi = lt.MaLopThi
+    INNER JOIN DeThi dt ON lt.MaDT = dt.MaDT
+    WHERE dt.MaKhoa = @MaKhoa 
+        AND kq.DaThamGia = 1
+        AND kq.DiemTong IS NOT NULL;
+    
+    RETURN ISNULL(@DiemTB, 0);
+END
+GO
+
+-- ============================================
+-- VIEW: vw_BangDiemChiTiet
+-- ============================================
+CREATE VIEW vw_BangDiemChiTiet
+AS
+SELECT 
+    kq.MaLopThi,
+    lt.TenLopThi,
+    dt.TenDT,
+    k.TenKhoa,
+    kq.MaSV,
+    sv.HoTenSV,
+    kq.DiemTong,
+    kq.XepLoai,
+    kq.TrangThai,
+    kq.ThoiGianLamBai,
+    kq.ThoiGianBatDau,
+    kq.ThoiGianKetThuc,
+    kq.DaThamGia,
+    lt.NgayThi
+FROM KetQuaThi kq
+INNER JOIN LopThi lt ON kq.MaLopThi = lt.MaLopThi
+INNER JOIN DeThi dt ON lt.MaDT = dt.MaDT
+INNER JOIN Khoa k ON dt.MaKhoa = k.MaKhoa
+INNER JOIN SinhVien sv ON kq.MaSV = sv.MaSV
+WHERE kq.DaThamGia = 1;
+GO
+
+-- ============================================
+-- TRIGGER: trg_CapNhatTrangThaiLopThiTuDong
+-- ============================================
+CREATE TRIGGER trg_CapNhatTrangThaiLopThiTuDong
+ON KetQuaThi
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Khi tất cả sinh viên hoàn thành bài thi -> Đổi trạng thái thành "Đã thi"
+    UPDATE LopThi
+    SET TrangThai = N'Đã thi'
+    FROM LopThi lt
+    WHERE NOT EXISTS (
+        SELECT 1 FROM KetQuaThi 
+        WHERE MaLopThi = lt.MaLopThi 
+            AND (TrangThai = N'Chưa làm' OR TrangThai = N'Đang làm')
+    )
+    AND lt.TrangThai <> N'Đã thi';
+END
+GO
+
+CREATE PROCEDURE sp_ThemSinhVienVaoLopThi
+    @MaLopThi NVARCHAR(10),
+    @MaSV NVARCHAR(10)
+AS
+BEGIN
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Kiểm tra lớp thi có tồn tại
+        IF NOT EXISTS (SELECT 1 FROM LopThi WHERE MaLopThi = @MaLopThi)
+        BEGIN
+            RAISERROR(N'Lớp thi không tồn tại.', 16, 1);
+        END
+
+        -- Kiểm tra sinh viên có tồn tại
+        IF NOT EXISTS (SELECT 1 FROM SinhVien WHERE MaSV = @MaSV)
+        BEGIN
+            RAISERROR(N'Sinh viên không tồn tại.', 16, 1);
+        END
+
+        -- Thêm sinh viên vào lớp thi
+        INSERT INTO ChiTietLopThi (MaLopThi, MaSV, SoThuTu)
+        VALUES (@MaLopThi, @MaSV, 
+            (SELECT ISNULL(MAX(SoThuTu), 0) + 1 FROM ChiTietLopThi WHERE MaLopThi = @MaLopThi));
+
+        -- Tạo bản ghi kết quả thi
+        INSERT INTO KetQuaThi (MaLopThi, MaSV)
+        VALUES (@MaLopThi, @MaSV);
+
+        COMMIT TRANSACTION;
+        PRINT N'Thêm sinh viên vào lớp thi thành công!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE PROCEDURE sp_XoaSinhVienKhoiLopThi
+    @MaLopThi NVARCHAR(10),
+    @MaSV NVARCHAR(10)
+AS
+BEGIN
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Xóa câu trả lời
+        DELETE FROM CauTraLoiSinhVien WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV;
+
+        -- Xóa kết quả thi
+        DELETE FROM KetQuaThi WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV;
+
+        -- Xóa chi tiết lớp thi
+        DELETE FROM ChiTietLopThi WHERE MaLopThi = @MaLopThi AND MaSV = @MaSV;
+
+        COMMIT TRANSACTION;
+        PRINT N'Xóa sinh viên khỏi lớp thi thành công!';
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+CREATE PROCEDURE sp_LayThongKeKetQuaThi
+    @MaLopThi NVARCHAR(10)
+AS
+BEGIN
+    SELECT 
+        kq.MaSV,
+        sv.HoTenSV,
+        l.TenLop,
+        kq.DiemTong,
+        kq.XepLoai,
+        kq.ThoiGianLamBai,
+        kq.ThoiGianBatDau,
+        kq.ThoiGianKetThuc,
+        kq.TrangThai,
+        COUNT(ctl.ID) AS SoCauTraLoi,
+        (SELECT COUNT(*) FROM CauHoiTracNghiem WHERE MaDT = lt.MaDT) AS TongCau
+    FROM KetQuaThi kq
+    INNER JOIN SinhVien sv ON kq.MaSV = sv.MaSV
+    INNER JOIN Lop l ON sv.MaLop = l.MaLop
+    INNER JOIN LopThi lt ON kq.MaLopThi = lt.MaLopThi
+    LEFT JOIN CauTraLoiSinhVien ctl ON kq.MaLopThi = ctl.MaLopThi AND kq.MaSV = ctl.MaSV
+    WHERE kq.MaLopThi = @MaLopThi
+    GROUP BY kq.MaSV, sv.HoTenSV, l.TenLop, kq.DiemTong, kq.XepLoai, 
+             kq.ThoiGianLamBai, kq.ThoiGianBatDau, kq.ThoiGianKetThuc, kq.TrangThai, lt.MaDT
+    ORDER BY kq.DiemTong DESC
+END
+GO
+CREATE PROCEDURE sp_LayCauTraLoiSinhVien
+    @MaLopThi NVARCHAR(10),
+    @MaSV NVARCHAR(10)
+AS
+BEGIN
+    SELECT 
+        ctl.ID,
+        ctl.MaCau,
+        ch.NoiDung AS NoiDungCau,
+        ch.DapAnA,
+        ch.DapAnB,
+        ch.DapAnC,
+        ch.DapAnD,
+        ch.DapAnDung,
+        ctl.DapAnChon,
+        ctl.DiemCauNay,
+        ch.ThuTu,
+        CASE WHEN ctl.DapAnChon = ch.DapAnDung THEN 1 ELSE 0 END AS DungSai
+    FROM CauTraLoiSinhVien ctl
+    INNER JOIN CauHoiTracNghiem ch ON ctl.MaCau = ch.MaCau
+    WHERE ctl.MaLopThi = @MaLopThi AND ctl.MaSV = @MaSV
+    ORDER BY ch.ThuTu ASC
+END
+GO
+-- Tắt kiểm tra FK
+ALTER TABLE CauTraLoiSinhVien NOCHECK CONSTRAINT ALL;
+ALTER TABLE KetQuaThi NOCHECK CONSTRAINT ALL;
+ALTER TABLE ChiTietLopThi NOCHECK CONSTRAINT ALL;
+ALTER TABLE LopThi NOCHECK CONSTRAINT ALL;

@@ -62,7 +62,8 @@
                     @if (Model != null && Model.Any())
                     {
                         foreach (var item in Model)
-                        {
+                        {   
+
                             var cssClass = item.TrangThai == "Đang mở" ? "success" :
                                           (item.TrangThai == "Chưa mở" ? "warning" : "danger");
 

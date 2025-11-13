@@ -1,0 +1,123 @@
+﻿@model QuanLySinhVien.Models.CauHoiTracNghiem
+
+@{
+    ViewBag.Title = "Chỉnh sửa câu hỏi trắc nghiệm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2><i class="fas fa-edit"></i> Chỉnh sửa câu hỏi trắc nghiệm</h2>
+            <p class="text-muted">Đề thi: <strong>@ViewBag.TenDeThi</strong> | Câu: <span class="badge badge-primary">@Model.MaCau</span></p>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    @Html.ValidationSummary(true)
+                </div>
+            }
+
+            @using (Html.BeginForm("Edit", "CauHoiTracNghiem", new { maDT = ViewBag.MaDT }, FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(m => m.MaCau)
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="NoiDung">
+                                <strong>Nội dung câu hỏi <span class="text-danger">*</span></strong>
+                            </label>
+                            @Html.TextAreaFor(m => m.NoiDung, new { @class = "form-control", rows = 3 })
+                            @Html.ValidationMessageFor(m => m.NoiDung, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="form-group">
+                            <label for="DapAnA">
+                                <strong>Đáp án A <span class="text-danger">*</span></strong>
+                            </label>
+                            @Html.TextBoxFor(m => m.DapAnA, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.DapAnA, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="form-group">
+                            <label for="DapAnB">
+                                <strong>Đáp án B <span class="text-danger">*</span></strong>
+                            </label>
+                            @Html.TextBoxFor(m => m.DapAnB, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.DapAnB, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="form-group">
+                            <label for="DapAnC">
+                                <strong>Đáp án C <span class="text-danger">*</span></strong>
+                            </label>
+                            @Html.TextBoxFor(m => m.DapAnC, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.DapAnC, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="form-group">
+                            <label for="DapAnD">
+                                <strong>Đáp án D <span class="text-danger">*</span></strong>
+                            </label>
+                            @Html.TextBoxFor(m => m.DapAnD, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.DapAnD, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="DapAnDung">
+                                        <strong>Đáp án đúng <span class="text-danger">*</span></strong>
+                                    </label>
+                                    @Html.DropDownListFor(m => m.DapAnDung,
+                                        new SelectList(new[] { "A", "B", "C", "D" }, Model.DapAnDung),
+                                        "-- Chọn --",
+                                        new { @class = "form-control" })
+                                    @Html.ValidationMessageFor(m => m.DapAnDung, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="Diem">
+                                        <strong>Điểm <span class="text-danger">*</span></strong>
+                                    </label>
+                                    @Html.TextBoxFor(m => m.Diem, new { @class = "form-control", @type = "number", @step = "0.5", @min = "0.5", @max = "10" })
+                                    @Html.ValidationMessageFor(m => m.Diem, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Thông tin câu hỏi:</strong><br />
+                            - Thứ tự: Câu @Model.ThuTu<br />
+                            - Ngày tạo: @Model.NgayTao.ToString("dd/MM/yyyy HH:mm")<br />
+                            @if (Model.NgayCapNhat.HasValue)
+                            {
+                                <text>- Ngày cập nhật: @Model.NgayCapNhat.Value.ToString("dd/MM/yyyy HH:mm")</text>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-light">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Cập nhật
+                        </button>
+                        <a href="@Url.Action("Index", new { maDT = ViewBag.MaDT })" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group label {
+        margin-top: 10px;
+    }
+</style>

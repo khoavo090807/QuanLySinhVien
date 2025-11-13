@@ -1,0 +1,125 @@
+﻿@model QuanLySinhVien.Models.DeThi
+
+@{
+    ViewBag.Title = "Chỉnh sửa đề thi - " + Model.TenDT;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>
+                <i class="fas fa-edit"></i> Chỉnh Sửa Đề Thi
+            </h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            }
+
+            @using (Html.BeginForm("Edit", "DeThi", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(m => m.MaDT)
+                @Html.HiddenFor(m => m.NgayTao)
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label><strong>Mã Đề Thi</strong></label>
+                            @Html.TextBoxFor(m => m.MaDT, new { @class = "form-control", @readonly = "readonly" })
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>Tên Đề Thi <span class="text-danger">*</span></strong></label>
+                            @Html.TextBoxFor(m => m.TenDT, new { @class = "form-control", placeholder = "Nhập tên đề thi..." })
+                            @Html.ValidationMessageFor(m => m.TenDT, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>Mô Tả</strong></label>
+                            @Html.TextAreaFor(m => m.MoTa, new { @class = "form-control", rows = 3, placeholder = "Nhập mô tả..." })
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>Khoa <span class="text-danger">*</span></strong></label>
+                            @Html.DropDownListFor(m => m.MaKhoa, ViewBag.DanhSachKhoa as List<SelectListItem>,
+                                "-- Chọn khoa --", new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.MaKhoa, "", new { @class = "text-danger" })
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><strong>Thời Gian Làm Bài (phút)</strong></label>
+                                    @Html.TextBoxFor(m => m.ThoiGianLamBai, new { @class = "form-control", @type = "number", placeholder = "0" })
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><strong>Số Câu Hỏi</strong></label>
+                                    @Html.TextBoxFor(m => m.SoCau, new { @class = "form-control", @readonly = "readonly" })
+                                    <small class="form-text text-muted">Tự động cập nhật khi thêm/xóa câu hỏi</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label><strong>Trạng Thái</strong></label>
+                            <div class="custom-control custom-checkbox">
+                                @Html.CheckBoxFor(m => m.TrangThai, new { @class = "custom-control-input" })
+                                <label class="custom-control-label" for="TrangThai">
+                                    Hoạt động
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong><i class="fas fa-info-circle"></i> Thông tin:</strong>
+                            <ul class="mb-0">
+                                <li>Ngày tạo: @Model.NgayTao.ToString("dd/MM/yyyy HH:mm")</li>
+                                <li>Mã đề thi không thể thay đổi</li>
+                                <li>Số câu hỏi được cập nhật tự động</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-light">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-save"></i> Lưu Thay Đổi
+                        </button>
+
+                        <a href="@Url.Action("Index", "CauHoiTracNghiem", new { maDT = Model.MaDT })"
+                           class="btn btn-info btn-lg">
+                            <i class="fas fa-question-circle"></i> Quản Lý Câu Hỏi
+                        </a>
+
+                        <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-arrow-left"></i> Quay Lại
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group label {
+        margin-top: 15px;
+        color: #333;
+    }
+
+    .text-danger {
+        color: #dc3545;
+    }
+
+    .btn-lg {
+        margin-top: 10px;
+        margin-right: 10px;
+    }
+</style>

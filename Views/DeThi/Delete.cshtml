@@ -1,0 +1,91 @@
+﻿@model QuanLySinhVien.Models.DeThi
+
+@{
+    ViewBag.Title = "Xóa đề thi - " + Model.TenDT;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-trash"></i> Xóa Đề Thi
+                    </h4>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Cảnh báo!</strong> Bạn sắp xóa đề thi này.
+                        Hành động này không thể hoàn tác và tất cả câu hỏi liên quan cũng sẽ bị xóa.
+                    </div>
+
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td><strong>Mã Đề Thi:</strong></td>
+                                <td><span class="badge badge-info">@Model.MaDT</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tên Đề Thi:</strong></td>
+                                <td>@Model.TenDT</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Số Câu Hỏi:</strong></td>
+                                <td>
+                                    <span class="badge badge-danger">@Model.SoCau câu</span>
+                                    <small class="text-danger"> (Tất cả sẽ bị xóa)</small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <hr />
+
+                    <h6><strong>Điều này sẽ xóa:</strong></h6>
+                    <ul>
+                        <li>Đề thi <strong>@Model.TenDT</strong></li>
+                        <li>Tất cả <strong>@Model.SoCau câu hỏi</strong> thuộc đề thi này</li>
+                        <li>Không thể phục hồi được</li>
+                    </ul>
+                </div>
+
+                <div class="card-footer bg-light">
+                    @using (Html.BeginForm("Delete", "DeThi", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit" class="btn btn-danger btn-lg btn-block"
+                                onclick="return confirm('Bạn chắc chắn muốn xóa đề thi này?')">
+                            <i class="fas fa-trash"></i> Xác Nhận Xóa
+                        </button>
+                    }
+
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg btn-block mt-2">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .alert {
+        border-radius: 5px;
+    }
+
+    .btn-lg {
+        margin-top: 5px;
+    }
+
+    ul {
+        margin-bottom: 0;
+    }
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>

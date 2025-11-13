@@ -1,0 +1,199 @@
+﻿@model KetQuaThiViewModel
+
+@{
+    ViewBag.Title = "Kết Quả Thi";
+}
+
+<style>
+    .result-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+        .result-card h3 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+    .score-circle {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: bold;
+        margin: 0 auto 20px;
+    }
+
+    .rank-badge {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    .rank-excellent {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .rank-good {
+        background-color: #17a2b8;
+        color: white;
+    }
+
+    .rank-average {
+        background-color: #ffc107;
+        color: black;
+    }
+
+    .rank-poor {
+        background-color: #fd7e14;
+        color: white;
+    }
+
+    .rank-fail {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-chart-line"></i> Kết Quả Thi
+        </h2>
+    </div>
+</div>
+
+<!-- Kết quả chính -->
+<div class="result-card text-center">
+    <h3>@Model.HoTenSV</h3>
+    <p class="mb-3">Lớp thi: @Model.TenLopThi</p>
+
+    <div class="score-circle">
+        @if (Model.DiemTong.HasValue)
+        {
+            <span>@Model.DiemTong.Value.ToString("F1")</span>
+        }
+        else
+        {
+            <span>---</span>
+        }
+    </div>
+
+    <div class="text-center">
+        <p style="font-size: 18px; margin-bottom: 10px;">Kết quả:</p>
+        @if (Model.DiemTong.HasValue)
+        {
+            var rankClass = Model.DiemTong >= 8.5 ? "rank-excellent" :
+                           (Model.DiemTong >= 7.0 ? "rank-good" :
+                           (Model.DiemTong >= 5.5 ? "rank-average" :
+                           (Model.DiemTong >= 4.0 ? "rank-poor" : "rank-fail")));
+            <div class="rank-badge @rankClass">@Model.XepLoai</div>
+        }
+        else
+        {
+            <p class="text-warning">Chưa có kết quả</p>
+        }
+    </div>
+</div>
+
+<!-- Thông tin chi tiết -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-clock"></i> Thông Tin Thời Gian
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted">Bắt đầu làm bài:</label>
+                    <p class="fw-bold">
+                        @if (Model.ThoiGianBatDau.HasValue)
+                        {
+                            @Model.ThoiGianBatDau.Value.ToString("dd/MM/yyyy HH:mm:ss")
+                        }
+                        else
+                        {
+                            <span class="text-muted">---</span>
+                        }
+                    </p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted">Kết thúc làm bài:</label>
+                    <p class="fw-bold">
+                        @if (Model.ThoiGianKetThuc.HasValue)
+                        {
+                            @Model.ThoiGianKetThuc.Value.ToString("dd/MM/yyyy HH:mm:ss")
+                        }
+                        else
+                        {
+                            <span class="text-muted">---</span>
+                        }
+                    </p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted">Thời gian làm bài:</label>
+                    <p class="fw-bold">
+                        @if (Model.ThoiGianLamBai.HasValue)
+                        {
+                            @(Model.ThoiGianLamBai.Value / 60) phút @(Model.ThoiGianLamBai.Value % 60) giây
+                                    }
+                        else
+                        {
+                            <span class="text-muted">---</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-check-circle"></i> Trạng Thái
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted">Mã sinh viên:</label>
+                    <p class="fw-bold">@Model.MaSV</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted">Trạng thái bài thi:</label>
+                    <p>
+                        <span class="badge bg-success" style="font-size: 14px;">@Model.TrangThai</span>
+                    </p>
+                </div>
+
+                <div class="alert alert-success alert-sm">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Bài thi đã được chấm điểm tự động</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Nút hành động -->
+<div class="mt-4 text-center">
+    <a href="@Url.Action("DanhSachSinhVien", new { id = Model.MaLopThi })"
+       class="btn btn-primary">
+        <i class="fas fa-arrow-left"></i> Quay lại Danh Sách
+    </a>
+    <button onclick="window.print()" class="btn btn-secondary">
+        <i class="fas fa-print"></i> In Kết Quả
+    </button>
+</div>

@@ -1,0 +1,122 @@
+﻿@using System.Dynamic
+
+@{
+    ViewBag.Title = "Danh Sách Sinh Viên";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-users"></i> Danh Sách Sinh Viên - Lớp Thi @ViewBag.MaLopThi
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list"></i> Danh sách sắp xếp A-Z
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center" width="50">STT</th>
+                        <th>Mã SV</th>
+                        <th>Họ Tên</th>
+                        <th>Email</th>
+                        <th class="text-center">Điểm</th>
+                        <th class="text-center">Xếp Loại</th>
+                        <th class="text-center">Trạng Thái</th>
+                        <th class="text-center" width="150">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        int stt = 1;
+                        foreach (dynamic item in Model)
+                        {
+                            var daThamGia = (bool)item.DaThamGia;
+                            var diemTong = (float?)item.DiemTong;
+                            var xepLoai = (string)item.XepLoai;
+                            var trangThai = (string)item.TrangThai;
+                            var maSV = (string)item.MaSV;
+                            var hoTen = (string)item.HoTenSV;
+                            var email = (string)item.Email;
+
+                            var statusBadge = daThamGia ? "success" : "secondary";
+                            var statusText = daThamGia ? "Đã tham gia" : "Chưa làm";
+                            var diemDisplay = diemTong.HasValue ? diemTong.Value.ToString("F2") : "---";
+
+                            <tr>
+                                <td class="text-center"><strong>@stt</strong></td>
+                                <td>@maSV</td>
+                                <td>@hoTen</td>
+                                <td>@email</td>
+                                <td class="text-center">
+                                    @if (diemTong.HasValue)
+                                    {
+                                        <span class="badge bg-info" style="font-size: 12px;">@diemDisplay/10</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">---</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (daThamGia)
+                                    {
+                                        var xepLoaiClass = xepLoai == "Giỏi" ? "success" :
+                                                         (xepLoai == "Khá" ? "info" :
+                                                         (xepLoai == "Trung bình" ? "warning" : "danger"));
+                                        <span class="badge bg-@xepLoaiClass">@xepLoai</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">---</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-@statusBadge">@statusText</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (daThamGia)
+                                    {
+                                        <a href="@Url.Action("XemChiTiet", new { maLopThi = ViewBag.MaLopThi, maSV = maSV })"
+                                           class="btn btn-sm btn-info" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i> Xem
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted text-sm">Chưa thi</span>
+                                    }
+                                </td>
+                            </tr>
+                            stt++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Không có dữ liệu sinh viên</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer text-muted">
+        <i class="fas fa-info-circle"></i> Tổng cộng: <strong>@(Model != null ? Model.Count : 0)</strong> sinh viên
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Quay lại
+    </a>
+</div>

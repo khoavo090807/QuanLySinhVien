@@ -1,0 +1,102 @@
+﻿<!-- ============ Views/LopThi/Index.cshtml ============ -->
+@model IEnumerable<QuanLySinhVien.Models.LopThi>
+
+@{
+    ViewBag.Title = "Quản lý Lớp Thi";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="page-title">
+            <i class="fas fa-list"></i> Quản lý Lớp Thi
+        </h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-edit"></i> Danh sách lớp thi</span>
+        <a href="@Url.Action("Create")" class="btn btn-light btn-sm">
+            <i class="fas fa-plus"></i> Tạo lớp thi
+        </a>
+    </div>
+    <div class="card-body">
+        <!-- Tìm kiếm -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                @using (Html.BeginForm("Index", "LopThi", FormMethod.Get, new { @class = "d-flex" }))
+                {
+                    <input type="text" name="searchString" class="form-control me-2"
+                           placeholder="Tìm kiếm mã hoặc tên lớp thi..."
+                           value="@ViewBag.SearchString" />
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Tìm
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Bảng danh sách -->
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Mã Lớp</th>
+                        <th>Tên Lớp</th>
+                        <th>Đề Thi</th>
+                        <th>Ngày Thi</th>
+                        <th class="text-center">Phòng</th>
+                        <th class="text-center">SL</th>
+                        <th class="text-center">Đã Tham</th>
+                        <th class="text-center">Trạng Thái</th>
+                        <th class="text-center" width="120">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var statusClass = item.TrangThai == "Đã thi" ? "success" :
+                                            (item.TrangThai == "Đang thi" ? "warning" : "info");
+
+                            <tr>
+                                <td><strong>@item.MaLopThi</strong></td>
+                                <td>@item.TenLopThi</td>
+                                <td>@item.TenDeThi</td>
+                                <td>@item.NgayThi.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-center">@item.PhongThi</td>
+                                <td class="text-center"><span class="badge bg-info">@item.SoLuong</span></td>
+                                <td class="text-center"><span class="badge bg-success">@item.SoDaTham</span></td>
+                                <td class="text-center">
+                                    <span class="badge bg-@statusClass">@item.TrangThai</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Details", new { id = item.MaLopThi })"
+                                           class="btn btn-info" title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("DanhSachSinhVien", new { id = item.MaLopThi })"
+                                           class="btn btn-primary" title="Danh sách SV">
+                                            <i class="fas fa-users"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Không có dữ liệu lớp thi</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
